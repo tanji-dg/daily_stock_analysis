@@ -87,6 +87,17 @@ class SystemConfigService:
 
     _LLM_CAPABILITY_ORDER: Tuple[str, ...] = ("json", "tools", "stream", "vision")
     _LLM_STREAM_CHUNK_LIMIT = 8
+    _LLM_PROVIDER_BLOCKED_TOKENS: Tuple[str, ...] = (
+        "your request was blocked",
+        "request was blocked",
+        "request has been blocked",
+        "request is blocked",
+        "request blocked",
+        "blocked by safety",
+        "blocked by policy",
+        "blocked by content",
+        "moderation_blocked",
+    )
     _LLM_CAPABILITY_PROBE_IMAGE = (
         "data:image/png;base64,"
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="
@@ -2665,19 +2676,13 @@ class SystemConfigService:
 
     @staticmethod
     def _has_provider_blocked_signal(text: str) -> bool:
+        """Match known upstream provider/gateway blocked signals for diagnostic classification.
+
+        These markers are only used to surface a dedicated `request_blocked` reason
+        in runtime checks and do not mutate or migrate persisted user config.
+        """
         lowered = text.lower()
-        blocked_tokens = (
-            "your request was blocked",
-            "request was blocked",
-            "request has been blocked",
-            "request is blocked",
-            "request blocked",
-            "blocked by safety",
-            "blocked by policy",
-            "blocked by content",
-            "moderation_blocked",
-        )
-        return any(token in lowered for token in blocked_tokens)
+        return any(token in lowered for token in SystemConfigService._LLM_PROVIDER_BLOCKED_TOKENS)
 
     @staticmethod
     def _has_provider_prefix_mismatch_signal(text: str) -> bool:
