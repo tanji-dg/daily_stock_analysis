@@ -82,13 +82,18 @@ jobs:
             ForEach-Object {
               Copy-Item -Path $_.FullName -Destination "dist/release-assets/$($_.Name)" -Force
             }
+          if (-not (Test-Path 'dist/release-assets/latest.yml')) {
+            throw 'No latest.yml found under dist/release-assets.'
+          }
+          if (-not (Get-ChildItem -Path 'dist/release-assets' -Filter '*.blockmap' -File)) {
+            throw 'No blockmap files found under dist/release-assets.'
+          }
+          Get-ChildItem -Path 'dist/release-assets' -File | Sort-Object Name | Format-Table Name, Length
 
       - uses: actions/upload-artifact@v6
         with:
           name: desktop-windows-${{ env.RELEASE_TAG }}
-          path: |
-            dist/release-assets/*.exe
-            dist/release-assets/*.zip
+          path: dist/release-assets/*
           if-no-files-found: error
 
   build-macos:
