@@ -5,10 +5,12 @@
 
 // ============ Request Types ============
 
+export type ReportType = 'simple' | 'detailed' | 'full' | 'brief' | 'market_review';
+
 export interface AnalysisRequest {
   stockCode?: string;
   stockCodes?: string[];
-  reportType?: 'simple' | 'detailed' | 'full' | 'brief';
+  reportType?: ReportType;
   forceRefresh?: boolean;
   asyncMode?: boolean;
   stockName?: string;
@@ -38,7 +40,7 @@ export interface ReportMeta {
   queryId: string;
   stockCode: string;
   stockName: string;
-  reportType: 'simple' | 'detailed' | 'full' | 'brief';
+  reportType: ReportType;
   reportLanguage?: ReportLanguage;
   createdAt: string;
   currentPrice?: number;
@@ -206,7 +208,7 @@ export interface HistoryItem {
   queryId: string;  // Linked analysis query ID
   stockCode: string;
   stockName?: string;
-  reportType?: string;
+  reportType?: ReportType;
   sentimentScore?: number;
   operationAdvice?: string;
   createdAt: string;
