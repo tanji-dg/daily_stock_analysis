@@ -728,15 +728,15 @@ class SystemConfigService:
             "max_tokens": 256,  # Increased to allow MiniMax-M2.7 thinking process + response
             "timeout": max(5.0, float(timeout_seconds)),
         }
+        if selected_api_key:
+            call_kwargs["api_key"] = selected_api_key
+        if base_url.strip():
+            call_kwargs["api_base"] = base_url.strip()
         call_kwargs = apply_litellm_generation_params(
             call_kwargs,
             resolved_model,
             self._get_runtime_llm_temperature(),
         )
-        if selected_api_key:
-            call_kwargs["api_key"] = selected_api_key
-        if base_url.strip():
-            call_kwargs["api_base"] = base_url.strip()
 
         try:
             import litellm

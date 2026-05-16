@@ -2220,6 +2220,21 @@ class GeminiAnalyzer:
                 }
                 if extra:
                     call_kwargs["extra_body"] = extra
+                uses_router = (
+                    (use_channel_router and self._router and model in router_model_names)
+                    or (self._router and model == config.litellm_model and not use_channel_router)
+                )
+                if not uses_router:
+                    try:
+                        keys = get_api_keys_for_model(model, config)
+                    except AttributeError:
+                        keys = []
+                    if keys:
+                        call_kwargs["api_key"] = keys[0]
+                    try:
+                        call_kwargs.update(extra_litellm_params(model, config))
+                    except AttributeError:
+                        pass
                 call_kwargs = apply_litellm_generation_params(
                     call_kwargs,
                     model,
@@ -2243,6 +2258,7 @@ class GeminiAnalyzer:
                             model=model,
                             call_kwargs={**call_kwargs, "stream": True},
                             model_list=config.llm_model_list,
+                            cache_recovery=False,
                             logger=logger,
                         )
                         _stream_text, _stream_usage = self._consume_litellm_stream(

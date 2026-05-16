@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional, Tuple
@@ -42,24 +43,64 @@ class GenerationParamRecovery:
 
 _GENERATION_PARAM_RECOVERY_CACHE: Dict[str, GenerationParamRecovery] = {}
 
+_LITELLM_ENDPOINT_PARAM_KEYS = (
+    "api_base",
+    "base_url",
+    "api_version",
+    "api_type",
+    "azure_endpoint",
+    "azure_deployment",
+    "deployment_id",
+    "custom_llm_provider",
+    "organization",
+    "region_name",
+    "aws_region_name",
+    "vertex_project",
+    "vertex_location",
+    "extra_headers",
+    "headers",
+    "default_headers",
+)
+_LITELLM_ROUTING_PARAM_KEYS = ("model", *_LITELLM_ENDPOINT_PARAM_KEYS)
+_SECRET_CACHE_FIELD_NAMES = {
+    "api_key",
+    "authorization",
+    "proxy_authorization",
+    "cookie",
+    "set-cookie",
+    "x-api-key",
+    "api-key",
+    "openai-api-key",
+}
+
 
 def _resolve_litellm_model_list_entry(
     model: str,
     model_list: Optional[List[Dict[str, Any]]] = None,
 ) -> Optional[Dict[str, Any]]:
     """Return the Router model_list entry matching the configured alias."""
+    entries = _resolve_litellm_model_list_entries(model, model_list)
+    return entries[0] if entries else None
+
+
+def _resolve_litellm_model_list_entries(
+    model: str,
+    model_list: Optional[List[Dict[str, Any]]] = None,
+) -> List[Dict[str, Any]]:
+    """Return Router model_list entries matching the configured alias."""
     normalized_model = (model or "").strip()
     if not normalized_model or not model_list:
-        return None
+        return []
 
+    entries: List[Dict[str, Any]] = []
     for entry in model_list:
         model_name = str(entry.get("model_name") or "").strip()
         if not model_name:
             params = entry.get("litellm_params", {}) or {}
             model_name = str(params.get("model") or "").strip()
         if model_name == normalized_model:
-            return entry
-    return None
+            entries.append(entry)
+    return entries
 
 
 def resolve_litellm_wire_model(
@@ -227,19 +268,89 @@ def normalize_litellm_temperature(
     return float(temperature)
 
 
+def _redact_recovery_cache_value(param_name: str, value: Any) -> Any:
+    if param_name.strip().lower() in _SECRET_CACHE_FIELD_NAMES:
+        return "<set>" if value else "<empty>"
+    if isinstance(value, Mapping):
+        return {
+            str(key): _redact_recovery_cache_value(str(key), nested_value)
+            for key, nested_value in sorted(value.items(), key=lambda item: str(item[0]))
+        }
+    if isinstance(value, (list, tuple)):
+        return [_redact_recovery_cache_value(param_name, item) for item in value]
+    return value
+
+
+def _stable_recovery_cache_json(value: Mapping[str, Any]) -> str:
+    redacted = {
+        key: _redact_recovery_cache_value(key, val)
+        for key, val in sorted(value.items())
+    }
+    return json.dumps(redacted, sort_keys=True, separators=(",", ":"), default=str)
+
+
+def _filter_litellm_routing_params(params: Mapping[str, Any]) -> Dict[str, Any]:
+    return {
+        key: params[key]
+        for key in _LITELLM_ROUTING_PARAM_KEYS
+        if key in params and params[key] not in (None, "")
+    }
+
+
+def _request_endpoint_cache_scope(request_overrides: Optional[Dict[str, Any]]) -> Optional[str]:
+    if not isinstance(request_overrides, Mapping):
+        return None
+    routing_params = _filter_litellm_routing_params(request_overrides)
+    if not any(key in routing_params for key in _LITELLM_ENDPOINT_PARAM_KEYS):
+        return None
+    return _stable_recovery_cache_json(routing_params)
+
+
+def _model_list_endpoint_cache_scope(
+    model: str,
+    model_list: Optional[List[Dict[str, Any]]],
+) -> Optional[str]:
+    entries = _resolve_litellm_model_list_entries(model, model_list)
+    if not entries:
+        return "default"
+
+    fingerprints = set()
+    for entry in entries:
+        params = entry.get("litellm_params", {}) or {}
+        if not isinstance(params, Mapping):
+            params = {}
+        routing_params = _filter_litellm_routing_params(params)
+        if not routing_params:
+            routing_params = {"model": str(entry.get("model_name") or model).strip()}
+        fingerprints.add(_stable_recovery_cache_json(routing_params))
+
+    if len(fingerprints) != 1:
+        return None
+    return next(iter(fingerprints))
+
+
 def _recovery_cache_key(
     model: str,
     *,
     model_list: Optional[List[Dict[str, Any]]] = None,
     request_overrides: Optional[Dict[str, Any]] = None,
-) -> str:
+) -> Optional[str]:
     wire_model = resolve_litellm_wire_model(model, model_list).strip().lower()
     thinking_enabled = resolve_litellm_thinking_enabled(
         model,
         model_list=model_list,
         request_overrides=request_overrides,
     )
-    return f"{wire_model or (model or '').strip().lower()}|thinking={thinking_enabled}"
+    endpoint_scope = _request_endpoint_cache_scope(request_overrides)
+    if endpoint_scope is None:
+        endpoint_scope = _model_list_endpoint_cache_scope(model, model_list)
+    if endpoint_scope is None:
+        return None
+    return (
+        f"{wire_model or (model or '').strip().lower()}"
+        f"|thinking={thinking_enabled}"
+        f"|endpoint={endpoint_scope}"
+    )
 
 
 def apply_litellm_param_recovery(
@@ -267,6 +378,8 @@ def get_cached_litellm_generation_param_recovery(
         model_list=model_list,
         request_overrides=request_overrides,
     )
+    if key is None:
+        return None
     return _GENERATION_PARAM_RECOVERY_CACHE.get(key)
 
 
@@ -283,6 +396,8 @@ def remember_litellm_generation_param_recovery(
         model_list=model_list,
         request_overrides=request_overrides,
     )
+    if key is None:
+        return
     _GENERATION_PARAM_RECOVERY_CACHE[key] = recovery
 
 

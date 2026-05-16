@@ -87,6 +87,7 @@ def call_litellm_with_param_recovery(
     model: str,
     call_kwargs: Dict[str, Any],
     model_list: Optional[List[Dict[str, Any]]] = None,
+    cache_recovery: bool = True,
     logger: Optional[Any] = None,
     log_label: str = "[LiteLLM]",
 ) -> Any:
@@ -109,10 +110,11 @@ def call_litellm_with_param_recovery(
                 recovery.reason,
             )
         response = call(retry_kwargs)
-        remember_litellm_generation_param_recovery(
-            model,
-            recovery,
-            model_list=model_list,
-            request_overrides=retry_kwargs,
-        )
+        if cache_recovery:
+            remember_litellm_generation_param_recovery(
+                model,
+                recovery,
+                model_list=model_list,
+                request_overrides=retry_kwargs,
+            )
         return response

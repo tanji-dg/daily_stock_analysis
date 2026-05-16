@@ -413,12 +413,6 @@ class LLMToolAdapter:
 
         if extra:
             call_kwargs["extra_body"] = extra
-        call_kwargs = apply_litellm_generation_params(
-            call_kwargs,
-            model,
-            self._get_temperature() if temperature is None else temperature,
-            model_list=self._config.llm_model_list,
-        )
 
         if tools:
             call_kwargs["tools"] = tools
@@ -427,6 +421,21 @@ class LLMToolAdapter:
         use_channel_router = self._has_channel_config()
         _router_model_names = set(get_configured_llm_models(self._config.llm_model_list))
         agent_primary_model = get_effective_agent_primary_model(self._config)
+        uses_router = (
+            bool(use_channel_router and self._router and model in _router_model_names)
+            or bool(self._router and model == agent_primary_model and not use_channel_router)
+        )
+        if not uses_router:
+            keys = get_api_keys_for_model(model, self._config)
+            if keys:
+                call_kwargs["api_key"] = keys[0]
+            call_kwargs.update(extra_litellm_params(model, self._config))
+        call_kwargs = apply_litellm_generation_params(
+            call_kwargs,
+            model,
+            self._get_temperature() if temperature is None else temperature,
+            model_list=self._config.llm_model_list,
+        )
         if use_channel_router and self._router and model in _router_model_names:
             # Channel / YAML path: Router manages all models in its model_list
             response = call_litellm_with_param_recovery(
@@ -449,10 +458,6 @@ class LLMToolAdapter:
             # Legacy/direct-env path: direct call (also handles direct-env
             # providers like groq/ or bedrock/ that are not in the Router
             # model_list even when channel mode is active)
-            keys = get_api_keys_for_model(model, self._config)
-            if keys:
-                call_kwargs["api_key"] = keys[0]
-            call_kwargs.update(extra_litellm_params(model, self._config))
             response = call_litellm_with_param_recovery(
                 lambda kwargs: litellm.completion(**kwargs),
                 model=model,
