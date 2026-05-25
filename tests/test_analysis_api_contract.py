@@ -320,6 +320,48 @@ class AnalysisApiContractTestCase(unittest.TestCase):
             "summary",
         )
 
+    def test_get_analysis_status_preserves_queue_report_created_at_when_enriching(self) -> None:
+        if get_analysis_status is None or analysis_endpoint_module is None:
+            self.skipTest("analysis endpoint helpers unavailable in this environment")
+
+        created_at = datetime(2026, 5, 21, 17, 40, 0)
+        queue = MagicMock()
+        queue.get_task.return_value = SimpleNamespace(
+            task_id="task-queue-2",
+            stock_code="600519",
+            stock_name="贵州茅台",
+            status=analysis_endpoint_module.TaskStatusEnum.COMPLETED,
+            progress=100,
+            result={
+                "stock_code": "600519",
+                "stock_name": "贵州茅台",
+                "report": {
+                    "meta": {"query_id": "task-queue-2", "stock_code": "600519"},
+                    "summary": {"analysis_summary": "summary"},
+                },
+            },
+            error=None,
+            original_query=None,
+            selection_source=None,
+            created_at=created_at,
+            completed_at=datetime(2026, 5, 21, 17, 45, 0),
+        )
+
+        with patch("api.v1.endpoints.analysis.get_task_queue", return_value=queue), \
+             patch(
+                 "api.v1.endpoints.analysis._load_sync_fundamental_sources",
+                 return_value=({}, None),
+             ):
+            status = get_analysis_status("task-queue-2")
+
+        self.assertEqual(status.status, "completed")
+        self.assertIsNotNone(status.result)
+        self.assertEqual(status.result.created_at, created_at.isoformat())
+        self.assertEqual(
+            status.result.report["meta"]["created_at"],
+            created_at.isoformat(),
+        )
+
     def test_run_market_review_background_raises_when_report_is_empty(self) -> None:
         if analysis_endpoint_module is None:
             self.skipTest("analysis endpoint helpers unavailable in this environment")
