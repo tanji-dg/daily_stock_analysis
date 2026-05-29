@@ -560,7 +560,7 @@ python main.py --workers 5            # Specify concurrency
 GitHub Actions parses `on.schedule.cron` before a job starts, so the cron expression cannot directly
 read Repository Variables, Secrets, or env values. As a result, the `SCHEDULE_TIME` repository
 variable only applies to the built-in local scheduler (`python main.py --schedule`); setting it alone
-does not change the default GitHub Actions trigger time and is not supported by the default workflow. When
+does not change the default GitHub Actions trigger time and is not yet implemented in this default workflow. When
 `SCHEDULE_TIME` is unset, GitHub Actions still executes at the fixed default cron (`0 10 * * 1-5`); to
 shift execution time, update `.github/workflows/00-daily-analysis.yml` cron manually.
 
