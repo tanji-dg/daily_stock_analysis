@@ -55,7 +55,7 @@ def screen(strategy: str, *, market: str = "cn", max_results: int = 20, use_llm:
 
 候选项建议包含 `code`、`name`、`score`、`reason`、`risk_level`、`risk_flags`、`price`、`change_pct`、`amount`、`industry`、`factor_scores`，以及 LLM 字段：`llm_score`、`llm_confidence`、`llm_thesis`、`llm_catalysts`、`llm_risks`、`llm_watch_items` 等。
 
-AlphaSift 侧已在 `ZhuLinsen/alphasift@2c76b2b6074ae3bae01d52e5e830a4af3e3246b2` 提供 DSA adapter contract，并支持复用 DSA 的 `LLM_TIMEOUT_SEC`。
+AlphaSift 侧已在 `ZhuLinsen/alphasift@b2ca66dd47001b9a09890cfe21c2b18c7219ccf5` 提供 DSA adapter contract，并支持复用 DSA 的 `LLM_TIMEOUT_SEC`。
 
 ## DSA 后端行为
 
