@@ -170,7 +170,10 @@ def _has_aggressive_buy_signal(result: Any, *, language: str) -> bool:
     decision_type = str(getattr(result, "decision_type", "") or "").lower()
     if decision_type == "buy":
         advice = str(getattr(result, "operation_advice", "") or "")
-        if _contains_any(advice, _buy_markers(language), language=language, require_negation=True):
+        markers = _buy_markers(language)
+        if _contains_any(advice, markers, language=language):
+            return True
+        if _contains_any(advice, markers, language=language, require_negation=True):
             return False
         return True
     advice = str(getattr(result, "operation_advice", "") or "")

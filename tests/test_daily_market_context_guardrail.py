@@ -206,6 +206,27 @@ def test_conservative_market_context_softens_when_risk_warning_then_recommend_bu
     assert result.decision_type == "hold"
 
 
+def test_conservative_market_context_softens_when_negated_chase_then_recommend_buy() -> None:
+    result = _result()
+    result.decision_type = "buy"
+    result.operation_advice = "不建议追高，但建议分批买入。"
+    result.confidence_level = "高"
+
+    adjustments = apply_daily_market_context_guardrail(
+        result,
+        daily_market_context={
+            "region": "cn",
+            "trade_date": "2026-06-06",
+            "summary": "大盘退潮，高风险，建议观望，仓位上限30%。",
+            "risk_tags": ["high_risk", "low_position_cap"],
+        },
+        report_language="zh",
+    )
+
+    assert "daily_market_context_buy_softened" in adjustments
+    assert result.decision_type == "hold"
+
+
 def test_conservative_market_context_does_not_soften_buy_when_negated_explicitly_in_english() -> None:
     result = _result()
     result.decision_type = "buy"

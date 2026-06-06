@@ -605,6 +605,47 @@ class MainScheduleModeTestCase(unittest.TestCase):
         refresh.assert_called_once_with(config)
         pipeline.run.assert_called_once()
 
+    def test_run_full_analysis_does_not_reuse_single_context_for_multi_market_review(self) -> None:
+        args = self._make_args()
+        config = self._make_config(
+            trading_day_check_enabled=True,
+            market_review_region="both",
+            market_review_enabled=True,
+            single_stock_notify=False,
+            merge_email_notification=False,
+            analysis_delay=0,
+            database_path=str(Path(self.temp_dir.name) / "stock_analysis.db"),
+        )
+        pipeline = MagicMock()
+        pipeline.run.return_value = []
+        pipeline_kwargs = {}
+
+        def build_pipeline(*args, **kwargs):
+            pipeline_kwargs.update(kwargs)
+            return pipeline
+
+        with patch.object(main, "_refresh_stock_index_cache_for_analysis") as refresh, \
+             patch("main._compute_trading_day_filter", return_value=([], "cn,us", False)), \
+             patch("src.core.pipeline.StockAnalysisPipeline", side_effect=build_pipeline), \
+             patch("main._prime_daily_market_context", return_value="A股缓存摘要") as prime_context, \
+             patch("main._run_market_review_with_shared_lock", return_value="多市场复盘") as run_with_lock, \
+             patch("src.core.market_review.run_market_review") as run_market_review:
+            main.run_full_analysis(config, args, [])
+
+        self.assertEqual(pipeline_kwargs["daily_market_context_allow_generate"], True)
+        prime_context.assert_called_once_with(
+            config,
+            pipeline=pipeline,
+            region="cn,us",
+            no_market_review=False,
+            allow_generate=True,
+        )
+        run_with_lock.assert_called_once()
+        self.assertEqual(run_with_lock.call_args.kwargs["override_region"], "cn,us")
+        run_market_review.assert_not_called()
+        refresh.assert_called_once_with(config)
+        pipeline.run.assert_called_once()
+
     def test_prime_daily_market_context_readonly_mode_still_reuses_cached_context(self) -> None:
         config = self._make_config(
             trading_day_check_enabled=False,

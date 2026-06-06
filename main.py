@@ -525,6 +525,16 @@ def _prime_daily_market_context(
     return str(getattr(context, "summary", ""))
 
 
+def _can_reuse_market_context_for_review(summary: str, region: str) -> bool:
+    if not summary:
+        return False
+    normalized = str(region or "").strip().lower()
+    if normalized == "both":
+        return False
+    parts = {item.strip() for item in normalized.split(",") if item.strip()}
+    return len(parts) <= 1
+
+
 def run_full_analysis(
     config: Config,
     args: argparse.Namespace,
@@ -633,8 +643,12 @@ def run_full_analysis(
             and not args.no_market_review
             and should_generate_market_context
         ):
+            can_reuse_market_context = _can_reuse_market_context_for_review(
+                market_context_summary,
+                market_review_region,
+            )
             # 避免重叠运行下重复复盘：先复检一次历史上下文（仅读取，不生成）。
-            if not market_context_summary:
+            if not can_reuse_market_context and not market_context_summary:
                 market_context_summary = _prime_daily_market_context(
                     config,
                     pipeline=pipeline,
@@ -642,9 +656,13 @@ def run_full_analysis(
                     no_market_review=args.no_market_review,
                     allow_generate=False,
                 )
+                can_reuse_market_context = _can_reuse_market_context_for_review(
+                    market_context_summary,
+                    market_review_region,
+                )
 
             review_result = None
-            if not market_context_summary:
+            if not can_reuse_market_context:
                 review_result = _run_market_review_with_shared_lock(
                     config,
                     run_market_review,
@@ -665,11 +683,15 @@ def run_full_analysis(
                     no_market_review=args.no_market_review,
                     allow_generate=False,
                 )
+                can_reuse_market_context = _can_reuse_market_context_for_review(
+                    market_context_summary,
+                    market_review_region,
+                )
 
             # 如果有结果，赋值给 market_report 用于后续飞书文档生成
             if review_result:
                 market_report = review_result
-            elif market_context_summary:
+            elif can_reuse_market_context:
                 market_report = market_context_summary
 
         # Issue #190: 合并推送（个股+大盘复盘）
