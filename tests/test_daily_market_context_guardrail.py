@@ -58,7 +58,8 @@ def test_conservative_market_context_softens_aggressive_buy() -> None:
 
     assert "daily_market_context_buy_softened" in adjustments
     assert result.decision_type == "hold"
-    assert "暂不追高" in result.operation_advice
+    assert result.operation_advice == "观望"
+    assert len(result.operation_advice) <= 20
     assert result.confidence_level == "中"
     assert result.sentiment_score == 52
     assert result.dashboard["operation_advice"] == result.operation_advice
@@ -185,6 +186,7 @@ def test_conservative_market_context_softens_generic_buy_advice_phrase() -> None
 
     assert "daily_market_context_buy_softened" in adjustments
     assert result.decision_type == "hold"
+    assert result.operation_advice == "观望"
 
 
 def test_conservative_market_context_softens_when_risk_warning_then_recommend_buy() -> None:
@@ -206,6 +208,7 @@ def test_conservative_market_context_softens_when_risk_warning_then_recommend_bu
 
     assert "daily_market_context_buy_softened" in adjustments
     assert result.decision_type == "hold"
+    assert result.operation_advice == "观望"
 
 
 def test_conservative_market_context_softens_when_negated_chase_then_recommend_buy() -> None:
@@ -227,6 +230,7 @@ def test_conservative_market_context_softens_when_negated_chase_then_recommend_b
 
     assert "daily_market_context_buy_softened" in adjustments
     assert result.decision_type == "hold"
+    assert result.operation_advice == "观望"
 
 
 def test_conservative_market_context_does_not_soften_buy_when_negated_explicitly_in_english() -> None:

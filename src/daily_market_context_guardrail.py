@@ -31,6 +31,10 @@ _NEGATION_LOOKBACK = 6
 _GUARDRAIL_SENTIMENT_SCORE = 52
 
 
+def _softened_operation_advice(language: str) -> str:
+    return "Watch" if language == "en" else "观望"
+
+
 def apply_daily_market_context_guardrail(
     result: Any,
     *,
@@ -53,11 +57,7 @@ def apply_daily_market_context_guardrail(
     elif _contains_any(str(getattr(result, "operation_advice", "") or ""), _buy_markers(language)):
         adjustments.append("daily_market_context_buy_softened")
 
-    softened_advice = (
-        "Market context is conservative; avoid aggressive buying, keep position small, and wait for confirmation."
-        if language == "en"
-        else "大盘环境偏谨慎，暂不追高；仅保留小仓试探或等待确认。"
-    )
+    softened_advice = _softened_operation_advice(language)
     result.operation_advice = softened_advice
 
     if _is_high_confidence(getattr(result, "confidence_level", "")):
