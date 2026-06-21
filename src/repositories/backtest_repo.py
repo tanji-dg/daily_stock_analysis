@@ -13,6 +13,9 @@ from typing import List, Optional, Tuple
 
 from sqlalchemy import and_, delete, desc, func, or_, select
 
+from data_provider.base import normalize_stock_code
+from src.core.backtest_engine import OVERALL_SENTINEL_CODE
+
 from src.storage import BacktestResult, BacktestSummary, DatabaseManager, AnalysisHistory
 
 logger = logging.getLogger(__name__)
@@ -52,7 +55,7 @@ class BacktestRepository:
         with self.db.get_session() as session:
             conditions = [AnalysisHistory.created_at <= cutoff_dt]
             if code:
-                conditions.append(AnalysisHistory.code == code)
+                conditions.extend(self._build_code_conditions(AnalysisHistory.code, code))
             conditions.append(
                 or_(
                     AnalysisHistory.report_type.is_(None),
@@ -346,9 +349,10 @@ class BacktestRepository:
         with self.db.get_session() as session:
             conditions = [
                 BacktestSummary.scope == scope,
-                BacktestSummary.code == code,
                 BacktestSummary.engine_version == engine_version,
             ]
+            if code:
+                conditions.extend(self._build_code_conditions(BacktestSummary.code, code))
             if eval_window_days is not None:
                 conditions.append(BacktestSummary.eval_window_days == eval_window_days)
 
@@ -425,7 +429,7 @@ class BacktestRepository:
     ) -> List[object]:
         conditions = []
         if code:
-            conditions.append(BacktestResult.code == code)
+            conditions.extend(BacktestRepository._build_code_conditions(BacktestResult.code, code))
         if eval_window_days is not None:
             conditions.append(BacktestResult.eval_window_days == eval_window_days)
         if engine_version:
@@ -438,3 +442,26 @@ class BacktestRepository:
             cutoff = datetime.now() - timedelta(days=int(days))
             conditions.append(BacktestResult.evaluated_at >= cutoff)
         return conditions
+
+    @staticmethod
+    def _build_code_conditions(column, code: str) -> List[object]:
+        if not code:
+            return []
+
+        raw_code = str(code).strip()
+        if raw_code.lower() == OVERALL_SENTINEL_CODE.lower():
+            raw_code = OVERALL_SENTINEL_CODE
+        else:
+            raw_code = raw_code.upper()
+
+        normalized_code = normalize_stock_code(raw_code)
+
+        candidates = [raw_code]
+        if normalized_code and normalized_code != raw_code:
+            candidates.append(normalized_code)
+
+        if len(candidates) == 1:
+            return [column == candidates[0]]
+
+        unique = list(dict.fromkeys(candidates))
+        return [or_(*[column == candidate for candidate in unique])]

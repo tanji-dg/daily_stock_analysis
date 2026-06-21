@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import and_, select
 
-from data_provider.base import normalize_stock_code
+from data_provider.base import canonical_stock_code, normalize_stock_code
 from src.config import get_config
 from src.core.backtest_engine import OVERALL_SENTINEL_CODE, BacktestEngine, EvaluationConfig
 from src.market_phase_summary import extract_market_phase_summary, normalize_analysis_phase_bucket
@@ -49,7 +49,8 @@ class BacktestService:
         if analysis_date_from and analysis_date_to and analysis_date_from > analysis_date_to:
             raise ValueError("analysis_date_from cannot be after analysis_date_to")
 
-        normalized_code = self._normalize_code(code)
+        query_code = self._normalize_code(code)
+        diagnostic_code = self._normalize_code_for_display(code)
 
         if eval_window_days is None:
             eval_window_days = getattr(config, "backtest_eval_window_days", 10)
@@ -67,7 +68,7 @@ class BacktestService:
 
         limit_int = int(limit)
         candidates = self._get_run_candidates(
-            code=normalized_code,
+            code=query_code,
             min_age_days=int(min_age_days),
             limit=limit_int,
             eval_window_days=int(eval_window_days),
@@ -220,7 +221,7 @@ class BacktestService:
             )
 
         diagnostics = self._build_run_diagnostics(
-            code=normalized_code,
+            code=diagnostic_code,
             eval_window_days=int(eval_window_days),
             min_age_days=int(min_age_days),
             limit=limit_int,
@@ -322,8 +323,16 @@ class BacktestService:
 
     @staticmethod
     def _normalize_code(code: Optional[str]) -> Optional[str]:
-        normalized = normalize_stock_code(str(code).strip()) if code else None
+        normalized = canonical_stock_code(str(code).strip()) if code else None
         return normalized or None
+
+    @staticmethod
+    def _normalize_code_for_display(code: Optional[str]) -> Optional[str]:
+        if not code:
+            return None
+
+        normalized = normalize_stock_code(str(code).strip())
+        return normalized or canonical_stock_code(code)
 
     @staticmethod
     def _build_run_diagnostics(

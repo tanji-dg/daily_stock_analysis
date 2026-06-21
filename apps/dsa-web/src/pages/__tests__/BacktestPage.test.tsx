@@ -282,7 +282,7 @@ describe('BacktestPage', () => {
 
     await waitFor(() => {
       expect(mockRun).toHaveBeenCalledWith({
-        code: '600519',
+        code: '600519.SH',
         force: undefined,
         minAgeDays: undefined,
         evalWindowDays: 15,
@@ -293,7 +293,7 @@ describe('BacktestPage', () => {
 
     await waitFor(() => {
       expect(mockGetResults).toHaveBeenLastCalledWith({
-        code: '600519',
+        code: '600519.SH',
         evalWindowDays: 15,
         analysisDateFrom: '2026-03-01',
         analysisDateTo: '2026-03-31',
@@ -301,7 +301,7 @@ describe('BacktestPage', () => {
         page: 1,
         limit: 20,
       });
-      expect(mockGetStockPerformance).toHaveBeenLastCalledWith('600519', {
+      expect(mockGetStockPerformance).toHaveBeenLastCalledWith('600519.SH', {
         evalWindowDays: 15,
         analysisDateFrom: '2026-03-01',
         analysisDateTo: '2026-03-31',

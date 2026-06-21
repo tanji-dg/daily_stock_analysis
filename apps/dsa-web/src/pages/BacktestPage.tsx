@@ -24,7 +24,6 @@ import type {
 } from '../types/backtest';
 import { buildDecisionActionLabelMap, getDecisionActionLabel } from '../utils/decisionAction';
 import { getMarketPhaseSummaryLabel } from '../utils/marketPhase';
-import { normalizeStockCode } from '../utils/stockCode';
 
 const BACKTEST_INPUT_CLASS =
   'input-surface input-focus-glow h-11 w-full rounded-xl border bg-transparent px-4 text-sm transition-all focus:outline-none disabled:cursor-not-allowed disabled:opacity-60';
@@ -53,7 +52,7 @@ function phaseLabel(row: BacktestResultItem, language: UiLanguage): string {
 function normalizeBacktestCode(value: string): string | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
-  return normalizeStockCode(trimmed).toUpperCase();
+  return trimmed.toUpperCase();
 }
 
 function labelFromMap(value: string | null | undefined, labels: Record<string, string>): string {

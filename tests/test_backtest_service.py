@@ -86,6 +86,7 @@ class BacktestServiceTestCase(unittest.TestCase):
         self,
         *,
         query_id: str,
+        code: str = "600519",
         analysis_date: date,
         created_at: datetime,
         operation_advice: str,
@@ -98,7 +99,7 @@ class BacktestServiceTestCase(unittest.TestCase):
             session.add(
                 AnalysisHistory(
                     query_id=query_id,
-                    code="600519",
+                    code=code,
                     name="贵州茅台",
                     report_type="simple",
                     sentiment_score=60,
@@ -122,7 +123,7 @@ class BacktestServiceTestCase(unittest.TestCase):
             )
             session.add(
                 StockDaily(
-                    code="600519",
+                    code=code,
                     date=analysis_date,
                     open=start_close,
                     high=start_close,
@@ -130,7 +131,16 @@ class BacktestServiceTestCase(unittest.TestCase):
                     close=start_close,
                 )
             )
-            session.add_all(forward_bars)
+            session.add_all([
+                StockDaily(
+                    code=code,
+                    date=bar.date,
+                    open=bar.open,
+                    high=bar.high,
+                    low=bar.low,
+                    close=bar.close,
+                ) for bar in forward_bars
+            ])
             session.commit()
 
     def tearDown(self) -> None:
@@ -214,6 +224,76 @@ class BacktestServiceTestCase(unittest.TestCase):
         self.assertIsNotNone(summary)
         self.assertEqual(summary["code"], "600519")
         self.assertEqual(summary["completed_count"], 1)
+
+    def test_run_backtest_keeps_dotted_cn_code_match_when_analysis_history_is_dotted(self) -> None:
+        self._seed_analysis(
+            query_id="q_dot_cn",
+            code="600519.SH",
+            analysis_date=date(2024, 1, 2),
+            created_at=datetime(2024, 1, 2, 0, 0, 0),
+            operation_advice="买入",
+            trend_prediction="看多",
+            start_close=100.0,
+            forward_bars=[
+                StockDaily(code="600519.SH", date=date(2024, 1, 3), high=111.0, low=100.0, close=105.0),
+                StockDaily(code="600519.SH", date=date(2024, 1, 4), high=108.0, low=102.0, close=106.0),
+                StockDaily(code="600519.SH", date=date(2024, 1, 5), high=109.0, low=102.0, close=107.0),
+            ],
+        )
+
+        service = BacktestService(self.db)
+        stats = service.run_backtest(
+            code="600519.SH",
+            force=False,
+            eval_window_days=3,
+            min_age_days=0,
+            analysis_date_from=date(2024, 1, 2),
+            analysis_date_to=date(2024, 1, 2),
+            limit=10,
+        )
+
+        self.assertEqual(stats["processed"], 1)
+        self.assertEqual(stats["saved"], 1)
+        self.assertEqual(stats["completed"], 1)
+
+        data = service.get_recent_evaluations(code="600519.SH", eval_window_days=3, limit=10, page=1)
+        self.assertEqual(data["items"][0]["code"], "600519.SH")
+
+        summary = service.get_summary(scope="stock", code="600519.SH", eval_window_days=3)
+        self.assertIsNotNone(summary)
+        self.assertEqual(summary["code"], "600519.SH")
+
+    def test_run_backtest_supports_us_suffix_code_shape_when_run_with_suffix(self) -> None:
+        self._seed_analysis(
+            query_id="q_aapl",
+            code="AAPL.US",
+            analysis_date=date(2024, 1, 3),
+            created_at=datetime(2024, 1, 3, 0, 0, 0),
+            operation_advice="买入",
+            trend_prediction="看多",
+            start_close=100.0,
+            forward_bars=[
+                StockDaily(code="AAPL.US", date=date(2024, 1, 4), high=101.0, low=95.0, close=96.0),
+            ],
+        )
+
+        service = BacktestService(self.db)
+        stats = service.run_backtest(
+            code="AAPL.US",
+            force=False,
+            eval_window_days=1,
+            min_age_days=0,
+            analysis_date_from=date(2024, 1, 3),
+            analysis_date_to=date(2024, 1, 3),
+            limit=10,
+        )
+
+        self.assertEqual(stats["processed"], 1)
+        self.assertEqual(stats["saved"], 1)
+
+        data = service.get_recent_evaluations(code="AAPL.US", eval_window_days=1, limit=10, page=1)
+        self.assertEqual(data["items"][0]["code"], "AAPL.US")
+        self.assertEqual(data["items"][0]["analysis_date"], "2024-01-03")
 
     def test_run_backtest_filters_by_snapshot_analysis_date_not_created_at(self) -> None:
         with self.db.get_session() as session:
