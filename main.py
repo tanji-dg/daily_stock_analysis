@@ -603,6 +603,16 @@ def _market_review_report_text(review_result: Any) -> str:
     return review_result if isinstance(review_result, str) else ""
 
 
+def _market_review_push_title(config: Config) -> str:
+    """Localized '📈 Market Review' heading prepended to the notification body."""
+    lang = str(getattr(config, "report_language", "zh")).strip().lower()
+    if lang.startswith("en"):
+        return "# 📈 Market Review"
+    if lang.startswith("ja") or lang.startswith("jp"):
+        return "# 📈 市場リキャップ"
+    return "# 📈 大盘复盘"
+
+
 def _save_reused_market_review_report(
     notifier: Any,
     market_report: str,
@@ -826,7 +836,7 @@ def run_full_analysis(
                     and pipeline.notifier.is_available()
                 ):
                     if pipeline.notifier.send(
-                        f"# 📈 大盘复盘\n\n{market_report}",
+                        f"{_market_review_push_title(config)}\n\n{market_report}",
                         email_send_to_all=True,
                         route_type="report",
                     ):
@@ -884,7 +894,7 @@ def run_full_analysis(
         if merge_notification and (results or market_report) and not args.no_notify:
             parts = []
             if market_report:
-                parts.append(f"# 📈 大盘复盘\n\n{market_report}")
+                parts.append(f"{_market_review_push_title(config)}\n\n{market_report}")
             if results:
                 dashboard_content = pipeline.notifier.generate_aggregate_report(
                     results,
@@ -929,7 +939,7 @@ def run_full_analysis(
 
                 # 添加大盘复盘内容（如果有）
                 if market_report:
-                    full_content += f"# 📈 大盘复盘\n\n{market_report}\n\n---\n\n"
+                    full_content += f"{_market_review_push_title(config)}\n\n{market_report}\n\n---\n\n"
 
                 # 添加个股决策仪表盘（使用 NotificationService 生成，按 report_type 分支）
                 if results:
