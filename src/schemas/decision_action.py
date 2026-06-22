@@ -25,14 +25,14 @@ _ACTION_VALUES = set(get_args(DecisionAction))
 _NON_STOCK_REPORT_TYPES = {"market_review"}
 
 _ACTION_LABELS: Dict[str, Dict[str, str]] = {
-    "buy": {"zh": "买入", "en": "Buy"},
-    "add": {"zh": "加仓", "en": "Add"},
-    "hold": {"zh": "持有", "en": "Hold"},
-    "reduce": {"zh": "减仓", "en": "Reduce"},
-    "sell": {"zh": "卖出", "en": "Sell"},
-    "watch": {"zh": "观望", "en": "Watch"},
-    "avoid": {"zh": "回避", "en": "Avoid"},
-    "alert": {"zh": "预警", "en": "Alert"},
+    "buy": {"zh": "买入", "en": "Buy", "ja": "買い"},
+    "add": {"zh": "加仓", "en": "Add", "ja": "買い増し"},
+    "hold": {"zh": "持有", "en": "Hold", "ja": "保有"},
+    "reduce": {"zh": "减仓", "en": "Reduce", "ja": "縮小"},
+    "sell": {"zh": "卖出", "en": "Sell", "ja": "売り"},
+    "watch": {"zh": "观望", "en": "Watch", "ja": "様子見"},
+    "avoid": {"zh": "回避", "en": "Avoid", "ja": "回避"},
+    "alert": {"zh": "预警", "en": "Alert", "ja": "警戒"},
 }
 
 _EXPLICIT_ALIASES: Dict[str, DecisionAction] = {
@@ -355,7 +355,9 @@ def localize_action_label(action: Any, language: Optional[str] = "zh") -> Option
     normalized = _explicit_action(action)
     if not normalized:
         return None
-    return _ACTION_LABELS[normalized][normalize_report_language(language)]
+    labels = _ACTION_LABELS[normalized]
+    lang = normalize_report_language(language)
+    return labels.get(lang) or labels.get("en") or labels.get("zh")
 
 
 def build_action_fields(
