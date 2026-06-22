@@ -129,8 +129,14 @@ def normalize_stock_code(stock_code: str) -> str:
     # while preserving explicit Yahoo suffix forms for JP/KR.
     if '.' in code:
         base, suffix = code.rsplit('.', 1)
-        if suffix.upper() == 'T' and base.isdigit() and len(base) in (4, 5):
-            return f"{base}.{suffix.upper()}"
+        if (
+            suffix.upper() == 'T'
+            and base.isascii()
+            and base.isalnum()
+            and len(base) in (4, 5)
+            and base[0].isdigit()
+        ):
+            return f"{base.upper()}.T"
         if suffix.upper() in ('KS', 'KQ') and base.isdigit() and len(base) == 6:
             return f"{base}.{suffix.upper()}"
         if suffix.upper() == 'HK' and base.isdigit() and 1 <= len(base) <= 5:
@@ -173,12 +179,20 @@ def _is_hk_market(code: str) -> bool:
 
 
 def _is_jp_market(code: str) -> bool:
-    """判定是否为日本 Yahoo Finance suffix 代码（如 7203.T）。"""
+    """判定是否为日本 Yahoo Finance suffix 代码（如 7203.T、285A.T）。
+
+    支持东证新式英数字混合代码（首位数字 + 数字/大写字母，共 4~5 位，如 285A=铠侠）。
+    """
     normalized = (code or "").strip().upper()
     if not normalized.endswith(".T"):
         return False
     base = normalized[:-2]
-    return base.isdigit() and len(base) in (4, 5)
+    return (
+        base.isascii()
+        and base.isalnum()
+        and len(base) in (4, 5)
+        and base[0].isdigit()
+    )
 
 
 def _is_kr_market(code: str) -> bool:

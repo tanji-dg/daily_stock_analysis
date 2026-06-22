@@ -61,6 +61,13 @@ def test_normalize_and_detect_jp_kr_suffix_codes() -> None:
     assert is_code_like("005930.KS") is True
     assert normalize_code("035720.KQ") == "035720.KQ"
 
+    # 东证新式英数字混合代码（285A=铠侠）也作为日股处理
+    assert normalize_stock_code("285a.t") == "285A.T"
+    assert detect_market("285A.T") == "jp"
+    assert get_market_for_stock("285A.T") == "jp"
+    assert is_code_like("285A.T") is True
+    assert normalize_code("285a.t") == "285A.T"
+
 
 def test_market_guidelines_for_jp_kr_exclude_a_share_specific_context() -> None:
     jp_guidelines = get_market_guidelines("7203.T")

@@ -84,7 +84,13 @@ class YfinanceFetcher(BaseFetcher):
         code = (stock_code or "").strip().upper()
         if code.endswith(".T"):
             base = code[:-2]
-            return base.isdigit() and len(base) in (4, 5)
+            # 东证新式英数字混合代码（首位数字 + 数字/大写字母，4~5 位，如 285A=铠侠）也支持
+            return (
+                base.isascii()
+                and base.isalnum()
+                and len(base) in (4, 5)
+                and base[0].isdigit()
+            )
         if code.endswith((".KS", ".KQ")):
             base = code.rsplit(".", 1)[0]
             return base.isdigit() and len(base) == 6

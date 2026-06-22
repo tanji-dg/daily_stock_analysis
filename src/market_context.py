@@ -36,7 +36,9 @@ def detect_market(stock_code: Optional[str]) -> str:
 
     # Japan/Korea suffix-only symbols supported by Yahoo Finance.
     # Bare Korean six-digit codes remain A-share fallback to avoid collision.
-    if re.match(r'^\d{4,5}\.T$', code):
+    # 日本株 Yahoo suffix（.T）。新形式の英数字混在コード（例 285A=キオクシア）にも対応。
+    # 先頭は数字、残りは数字/英大文字、計4〜5桁。
+    if re.match(r'^[0-9][0-9A-Z]{3,4}\.T$', code):
         return "jp"
     if re.match(r'^\d{6}\.(KS|KQ)$', code):
         return "kr"

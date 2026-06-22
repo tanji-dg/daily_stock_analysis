@@ -55,6 +55,20 @@ def test_ja_sentiment_labels() -> None:
     assert get_sentiment_label(5, "ja") == "非常に悲観"
 
 
+def test_detect_market_supports_new_tse_alphanumeric_codes() -> None:
+    from src.market_context import detect_market, get_market_role
+
+    # 东证新式英数字混合代码（285A=キオクシア）も日本株として判定する
+    assert detect_market("285A.T") == "jp"
+    assert detect_market("285a.t") == "jp"
+    assert get_market_role("285A.T", "ja") == "日本株"
+    # 既存の数字コード・他市場は回帰なし
+    assert detect_market("7203.T") == "jp"
+    assert detect_market("MU") == "us"
+    # 先頭が数字でない .T はJP扱いにしない（誤検知防止）
+    assert detect_market("ABCD.T") != "jp"
+
+
 def test_market_context_ja_roles_and_guidelines() -> None:
     assert get_market_role("7203.T", "ja") == "日本株"
     assert get_market_role("AAPL", "ja") == "米国株"

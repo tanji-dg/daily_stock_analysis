@@ -36,6 +36,15 @@ _PRESERVE_SUFFIXES = {".T", ".KS", ".KQ"}
 
 
 def _valid_exchange_code(exchange: str, base: str, digit_lens: tuple[int, ...]) -> bool:
+    # 东证（.T）支持新式英数字混合代码（首位数字 + 数字/大写字母，如 285A=铠侠）。
+    if exchange == "T":
+        upper = base.upper()
+        return (
+            upper.isascii()
+            and upper.isalnum()
+            and len(upper) in digit_lens
+            and upper[0].isdigit()
+        )
     if not (base.isdigit() and len(base) in digit_lens):
         return False
     if exchange == "BJ":
