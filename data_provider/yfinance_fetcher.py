@@ -442,10 +442,12 @@ class YfinanceFetcher(BaseFetcher):
 
     def _get_jp_main_indices(self, yf) -> Optional[List[Dict[str, Any]]]:
         """获取日本主要指数行情（日经225、TOPIX），复用 _fetch_yf_ticker_data。"""
+        # yfinance（query*.finance.yahoo.com）无法获取 TOPIX 指数本体：
+        #   ^TOPX / ^TPX 均返回 no price data；998405.T（雅虎日本 TOPIX 代码）在美区 API 返回 404。
+        # 因此用 NEXT FUNDS TOPIX 连动 ETF(1306.T) 作为 TOPIX 代理（涨跌幅≈TOPIX，价位为 ETF 价非指数点）。
         jp_indices = {
             'N225': ('^N225', '日经225'),
-            # Yahoo Finance 的 TOPIX 正确符号为 ^TPX（^TOPX 已下线，会返回 no price data）
-            'TOPX': ('^TPX', '东证指数'),
+            'TOPX': ('1306.T', 'TOPIX连动ETF(1306)'),
         }
         results = []
         try:
