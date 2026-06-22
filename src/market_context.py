@@ -56,22 +56,27 @@ _MARKET_ROLES = {
     "cn": {
         "zh": " A 股",
         "en": "China A-shares",
+        "ja": "中国A株",
     },
     "hk": {
         "zh": "港股",
         "en": "Hong Kong stock",
+        "ja": "香港株",
     },
     "us": {
         "zh": "美股",
         "en": "US stock",
+        "ja": "米国株",
     },
     "jp": {
         "zh": "日股",
         "en": "Japan stock",
+        "ja": "日本株",
     },
     "kr": {
         "zh": "韩股",
         "en": "Korea stock",
+        "ja": "韓国株",
     },
 }
 
@@ -85,6 +90,10 @@ _MARKET_GUIDELINES = {
             "- This analysis covers a **China A-share** (listed on Shanghai/Shenzhen exchanges).\n"
             "- Consider A-share-specific rules: daily price limits (±10%/±20%/±30%), T+1 settlement, and PRC policy factors."
         ),
+        "ja": (
+            "- 今回の分析対象は **中国A株**（上海・深セン取引所の上場銘柄）です。\n"
+            "- A株特有の値幅制限（±10%/±20%/±30%）、T+1決済、中国の政策要因に留意してください。"
+        ),
     },
     "hk": {
         "zh": (
@@ -94,6 +103,10 @@ _MARKET_GUIDELINES = {
         "en": (
             "- This analysis covers a **Hong Kong stock** (listed on HKEX).\n"
             "- HK stocks have no daily price limits, allow T+0 trading. Consider HKD FX, Southbound/Northbound flows, and HKEX-specific rules."
+        ),
+        "ja": (
+            "- 今回の分析対象は **香港株**（香港取引所の上場銘柄）です。\n"
+            "- 香港株は値幅制限がなくT+0取引が可能です。香港ドル相場、南向き・北向き資金フロー、HKEX特有のルールに留意してください。"
         ),
     },
     "us": {
@@ -105,6 +118,10 @@ _MARKET_GUIDELINES = {
             "- This analysis covers a **US stock** (listed on NYSE/NASDAQ).\n"
             "- US stocks have no daily price limits (but have circuit breakers), allow T+0 and pre/after-market trading. Consider USD FX, Fed policy, and SEC regulations."
         ),
+        "ja": (
+            "- 今回の分析対象は **米国株**（NYSE/NASDAQ の上場銘柄）です。\n"
+            "- 米国株は値幅制限がなく（ただしサーキットブレーカーあり）、T+0や時間外取引が可能です。米ドル相場、FRBの政策、SECの規制動向に留意してください。"
+        ),
     },
     "jp": {
         "zh": (
@@ -114,6 +131,10 @@ _MARKET_GUIDELINES = {
         "en": (
             "- This analysis covers a **Japan stock** (Yahoo Finance suffix such as `.T`).\n"
             "- Use Japan-market context: JPY FX, BOJ policy, corporate governance, and sector cycles; do not apply China A-share concepts such as daily price-limit boards, Northbound flows, Dragon Tiger lists, or margin-financing narratives."
+        ),
+        "ja": (
+            "- 今回の分析対象は **日本株**（日本の取引所の上場銘柄、Yahoo Finance では `.T` などのサフィックス）です。\n"
+            "- 日本市場の文脈で分析し、円相場、日銀の政策、コーポレートガバナンス、業種サイクルに留意してください。A株特有の値幅制限ボード、北向き資金、龍虎榜、信用取引の語り口などをそのまま当てはめないこと。"
         ),
     },
     "kr": {
@@ -125,8 +146,22 @@ _MARKET_GUIDELINES = {
             "- This analysis covers a **Korea stock** (KOSPI/KOSDAQ suffix `.KS` / `.KQ`).\n"
             "- Use Korea-market context: KRW FX, Bank of Korea policy, semiconductor/internet cycles, and local trading rules; do not apply China A-share concepts such as daily price-limit boards, Northbound flows, Dragon Tiger lists, or margin-financing narratives."
         ),
+        "ja": (
+            "- 今回の分析対象は **韓国株**（KOSPI/KOSDAQ、`.KS` / `.KQ` サフィックス付き）です。\n"
+            "- 韓国市場の文脈で分析し、ウォン相場、韓国銀行の政策、半導体・インターネット産業のサイクル、現地の取引制度に留意してください。A株特有の値幅制限ボード、北向き資金、龍虎榜、信用取引の語り口などをそのまま当てはめないこと。"
+        ),
     },
 }
+
+
+def _resolve_lang_key(lang: Optional[str]) -> str:
+    """Map a report-language code to a market-context label key (zh/en/ja)."""
+    normalized = str(lang or "zh").strip().lower()
+    if normalized.startswith("en"):
+        return "en"
+    if normalized.startswith("ja") or normalized.startswith("jp"):
+        return "ja"
+    return "zh"
 
 
 def get_market_role(stock_code: Optional[str], lang: str = "zh") -> str:
@@ -140,8 +175,9 @@ def get_market_role(stock_code: Optional[str], lang: str = "zh") -> str:
         Role string like 'A 股投资分析' or 'US stock investment analysis'.
     """
     market = detect_market(stock_code)
-    lang_key = "en" if lang == "en" else "zh"
-    return _MARKET_ROLES.get(market, _MARKET_ROLES["cn"])[lang_key]
+    lang_key = _resolve_lang_key(lang)
+    role = _MARKET_ROLES.get(market, _MARKET_ROLES["cn"])
+    return role.get(lang_key, role["zh"])
 
 
 def get_market_guidelines(stock_code: Optional[str], lang: str = "zh") -> str:
@@ -155,5 +191,6 @@ def get_market_guidelines(stock_code: Optional[str], lang: str = "zh") -> str:
         Multi-line string with market-specific guidelines.
     """
     market = detect_market(stock_code)
-    lang_key = "en" if lang == "en" else "zh"
-    return _MARKET_GUIDELINES.get(market, _MARKET_GUIDELINES["cn"])[lang_key]
+    lang_key = _resolve_lang_key(lang)
+    guidelines = _MARKET_GUIDELINES.get(market, _MARKET_GUIDELINES["cn"])
+    return guidelines.get(lang_key, guidelines["zh"])

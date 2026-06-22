@@ -6,7 +6,7 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, Optional
 
-SUPPORTED_REPORT_LANGUAGES = ("zh", "en")
+SUPPORTED_REPORT_LANGUAGES = ("zh", "en", "ja")
 
 _REPORT_LANGUAGE_ALIASES = {
     "zh-cn": "zh",
@@ -22,6 +22,12 @@ _REPORT_LANGUAGE_ALIASES = {
     "en_us": "en",
     "en-gb": "en",
     "en_gb": "en",
+    "jp": "ja",
+    "ja-jp": "ja",
+    "ja_jp": "ja",
+    "jp-jp": "ja",
+    "jp_jp": "ja",
+    "japanese": "ja",
 }
 
 _OPERATION_ADVICE_CANONICAL_MAP = {
@@ -49,16 +55,30 @@ _OPERATION_ADVICE_CANONICAL_MAP = {
     "强烈卖出": "strong_sell",
     "strong sell": "strong_sell",
     "strong_sell": "strong_sell",
+    # Japanese inputs
+    "強い買い": "strong_buy",
+    "強気買い": "strong_buy",
+    "買い": "buy",
+    "買い増し": "buy",
+    "保持": "hold",
+    "ホールド": "hold",
+    "様子見": "watch",
+    "縮小": "reduce",
+    "売り減らし": "reduce",
+    "一部売り": "reduce",
+    "売り": "sell",
+    "強い売り": "strong_sell",
+    "強気売り": "strong_sell",
 }
 
 _OPERATION_ADVICE_TRANSLATIONS = {
-    "strong_buy": {"zh": "强烈买入", "en": "Strong Buy"},
-    "buy": {"zh": "买入", "en": "Buy"},
-    "hold": {"zh": "持有", "en": "Hold"},
-    "watch": {"zh": "观望", "en": "Watch"},
-    "reduce": {"zh": "减仓", "en": "Reduce"},
-    "sell": {"zh": "卖出", "en": "Sell"},
-    "strong_sell": {"zh": "强烈卖出", "en": "Strong Sell"},
+    "strong_buy": {"zh": "强烈买入", "en": "Strong Buy", "ja": "強い買い"},
+    "buy": {"zh": "买入", "en": "Buy", "ja": "買い"},
+    "hold": {"zh": "持有", "en": "Hold", "ja": "保持"},
+    "watch": {"zh": "观望", "en": "Watch", "ja": "様子見"},
+    "reduce": {"zh": "减仓", "en": "Reduce", "ja": "縮小"},
+    "sell": {"zh": "卖出", "en": "Sell", "ja": "売り"},
+    "strong_sell": {"zh": "强烈卖出", "en": "Strong Sell", "ja": "強い売り"},
 }
 
 _TREND_PREDICTION_CANONICAL_MAP = {
@@ -85,14 +105,26 @@ _TREND_PREDICTION_CANONICAL_MAP = {
     "强烈看空": "strong_bearish",
     "strong bearish": "strong_bearish",
     "very bearish": "strong_bearish",
+    # Japanese inputs
+    "強い強気": "strong_bullish",
+    "非常に強気": "strong_bullish",
+    "強気": "bullish",
+    "上昇": "bullish",
+    "横ばい": "sideways",
+    "もみ合い": "sideways",
+    "中立": "sideways",
+    "弱気": "bearish",
+    "下落": "bearish",
+    "強い弱気": "strong_bearish",
+    "非常に弱気": "strong_bearish",
 }
 
 _TREND_PREDICTION_TRANSLATIONS = {
-    "strong_bullish": {"zh": "强烈看多", "en": "Strong Bullish"},
-    "bullish": {"zh": "看多", "en": "Bullish"},
-    "sideways": {"zh": "震荡", "en": "Sideways"},
-    "bearish": {"zh": "看空", "en": "Bearish"},
-    "strong_bearish": {"zh": "强烈看空", "en": "Strong Bearish"},
+    "strong_bullish": {"zh": "强烈看多", "en": "Strong Bullish", "ja": "非常に強気"},
+    "bullish": {"zh": "看多", "en": "Bullish", "ja": "強気"},
+    "sideways": {"zh": "震荡", "en": "Sideways", "ja": "横ばい"},
+    "bearish": {"zh": "看空", "en": "Bearish", "ja": "弱気"},
+    "strong_bearish": {"zh": "强烈看空", "en": "Strong Bearish", "ja": "非常に弱気"},
 }
 
 _CONFIDENCE_LEVEL_CANONICAL_MAP = {
@@ -103,12 +135,16 @@ _CONFIDENCE_LEVEL_CANONICAL_MAP = {
     "med": "medium",
     "低": "low",
     "low": "low",
+    # Japanese inputs
+    "高い": "high",
+    "中程度": "medium",
+    "低い": "low",
 }
 
 _CONFIDENCE_LEVEL_TRANSLATIONS = {
-    "high": {"zh": "高", "en": "High"},
-    "medium": {"zh": "中", "en": "Medium"},
-    "low": {"zh": "低", "en": "Low"},
+    "high": {"zh": "高", "en": "High", "ja": "高い"},
+    "medium": {"zh": "中", "en": "Medium", "ja": "中程度"},
+    "low": {"zh": "低", "en": "Low", "ja": "低い"},
 }
 
 _CHIP_HEALTH_CANONICAL_MAP = {
@@ -118,12 +154,16 @@ _CHIP_HEALTH_CANONICAL_MAP = {
     "average": "average",
     "警惕": "caution",
     "caution": "caution",
+    # Japanese inputs
+    "良好": "healthy",
+    "普通": "average",
+    "注意": "caution",
 }
 
 _CHIP_HEALTH_TRANSLATIONS = {
-    "healthy": {"zh": "健康", "en": "Healthy"},
-    "average": {"zh": "一般", "en": "Average"},
-    "caution": {"zh": "警惕", "en": "Caution"},
+    "healthy": {"zh": "健康", "en": "Healthy", "ja": "良好"},
+    "average": {"zh": "一般", "en": "Average", "ja": "普通"},
+    "caution": {"zh": "警惕", "en": "Caution", "ja": "注意"},
 }
 
 _BIAS_STATUS_CANONICAL_MAP = {
@@ -135,32 +175,39 @@ _BIAS_STATUS_CANONICAL_MAP = {
     "危险": "danger",
     "risk": "danger",
     "danger": "danger",
+    # Japanese inputs
+    "注意": "caution",
+    "危険": "danger",
 }
 
 _BIAS_STATUS_TRANSLATIONS = {
-    "safe": {"zh": "安全", "en": "Safe"},
-    "caution": {"zh": "警戒", "en": "Caution"},
-    "danger": {"zh": "危险", "en": "Danger"},
+    "safe": {"zh": "安全", "en": "Safe", "ja": "安全"},
+    "caution": {"zh": "警戒", "en": "Caution", "ja": "警戒"},
+    "danger": {"zh": "危险", "en": "Danger", "ja": "危険"},
 }
 
 _PLACEHOLDER_BY_LANGUAGE = {
     "zh": "待补充",
     "en": "TBD",
+    "ja": "未定",
 }
 
 _UNKNOWN_BY_LANGUAGE = {
     "zh": "未知",
     "en": "Unknown",
+    "ja": "不明",
 }
 
 _NO_DATA_BY_LANGUAGE = {
     "zh": "数据缺失",
     "en": "Data unavailable",
+    "ja": "データなし",
 }
 
 _CHIP_UNAVAILABLE_BY_LANGUAGE = {
     "zh": "筹码分布未启用或数据源暂不可用，未纳入筹码判断。",
     "en": "Chip distribution is disabled or temporarily unavailable; chip signals were not used.",
+    "ja": "保有分布（チップ分布）は無効か一時的に取得できないため、判断に組み込んでいません。",
 }
 
 _CHIP_PLACEHOLDER_EXACT = {
@@ -175,6 +222,9 @@ _CHIP_PLACEHOLDER_EXACT = {
     "未知",
     "暂无",
     "待补充",
+    "未定",
+    "不明",
+    "データなし",
 }
 
 _CHIP_PLACEHOLDER_HINTS = (
@@ -197,6 +247,7 @@ _CHIP_UNAVAILABLE_REASON_KEYS = (
 _GENERIC_STOCK_NAME_BY_LANGUAGE = {
     "zh": "待确认股票",
     "en": "Unnamed Stock",
+    "ja": "銘柄名未確認",
 }
 
 _REPORT_LABELS: Dict[str, Dict[str, str]] = {
@@ -416,6 +467,114 @@ _REPORT_LABELS: Dict[str, Dict[str, str]] = {
         "leading_board_label": "Leading",
         "lagging_board_label": "Lagging",
     },
+    "ja": {
+        "dashboard_title": "判断ダッシュボード",
+        "brief_title": "判断ブリーフ",
+        "analyzed_prefix": "分析対象",
+        "stock_unit": "銘柄",
+        "stock_unit_compact": "銘柄",
+        "buy_label": "買い",
+        "watch_label": "様子見",
+        "sell_label": "売り",
+        "summary_heading": "分析結果サマリー",
+        "info_heading": "重要情報ハイライト",
+        "sentiment_summary_label": "市場心理",
+        "earnings_outlook_label": "業績見通し",
+        "risk_alerts_label": "リスク警告",
+        "positive_catalysts_label": "好材料",
+        "latest_news_label": "最新動向",
+        "core_conclusion_heading": "主要結論",
+        "one_sentence_label": "一言での判断",
+        "time_sensitivity_label": "有効期間",
+        "default_time_sensitivity": "今週中",
+        "position_status_label": "保有状況",
+        "action_advice_label": "アクション提案",
+        "no_position_label": "未保有",
+        "has_position_label": "保有中",
+        "continue_holding": "保有継続",
+        "market_snapshot_heading": "当日の値動き",
+        "close_label": "終値",
+        "prev_close_label": "前日終値",
+        "open_label": "始値",
+        "high_label": "高値",
+        "low_label": "安値",
+        "change_pct_label": "騰落率",
+        "change_amount_label": "騰落額",
+        "amplitude_label": "値幅",
+        "volume_label": "出来高",
+        "amount_label": "売買代金",
+        "current_price_label": "現在値",
+        "volume_ratio_label": "出来高比",
+        "turnover_rate_label": "売買回転率",
+        "source_label": "データ出典",
+        "data_perspective_heading": "データ分析",
+        "ma_alignment_label": "移動平均の並び",
+        "bullish_alignment_label": "上昇配列",
+        "yes_label": "はい",
+        "no_label": "いいえ",
+        "trend_strength_label": "トレンド強度",
+        "price_metrics_label": "価格指標",
+        "ma5_label": "MA5",
+        "ma10_label": "MA10",
+        "ma20_label": "MA20",
+        "bias_ma5_label": "乖離率(MA5)",
+        "support_level_label": "支持線",
+        "resistance_level_label": "抵抗線",
+        "chip_label": "保有分布",
+        "phase_decision_heading": "ザラ場判断ガードレール",
+        "action_window_label": "アクション時間帯",
+        "immediate_action_label": "現在のアクション",
+        "watch_conditions_label": "観察条件",
+        "next_check_time_label": "次回チェック",
+        "confidence_reason_label": "確信度の理由",
+        "data_limitations_label": "データ制約",
+        "battle_plan_heading": "作戦計画",
+        "ideal_buy_label": "理想的な買い場",
+        "secondary_buy_label": "次善の買い場",
+        "stop_loss_label": "損切りライン",
+        "take_profit_label": "目標株価",
+        "suggested_position_label": "推奨ポジション",
+        "entry_plan_label": "建玉戦略",
+        "risk_control_label": "リスク管理戦略",
+        "checklist_heading": "チェックリスト",
+        "failed_checks_heading": "未達のチェック項目",
+        "history_compare_heading": "過去シグナル比較",
+        "time_label": "時刻",
+        "score_label": "スコア",
+        "advice_label": "提案",
+        "trend_label": "トレンド",
+        "generated_at_label": "レポート生成日時",
+        "report_time_label": "生成日時",
+        "no_results": "分析結果なし",
+        "report_title": "株式分析レポート",
+        "avg_score_label": "平均スコア",
+        "action_points_heading": "売買ポイント",
+        "position_advice_heading": "保有アドバイス",
+        "analysis_model_label": "分析モデル",
+        "not_investment_advice": "AI生成。参考情報であり、投資助言ではありません。",
+        "details_report_hint": "詳細レポートはこちら：",
+        "financial_summary_heading": "財務サマリー",
+        "report_date_label": "決算期",
+        "revenue_label": "売上高",
+        "net_profit_label": "親会社株主純利益",
+        "operating_cash_flow_label": "営業キャッシュフロー",
+        "roe_label": "ROE",
+        "revenue_yoy_label": "売上高 前年比",
+        "net_profit_yoy_label": "純利益 前年比",
+        "gross_margin_label": "粗利率",
+        "shareholder_return_heading": "株主還元",
+        "ttm_cash_dividend_label": "過去12カ月の1株あたり現金配当(税引前)",
+        "ttm_event_count_label": "過去12カ月の配当回数",
+        "ttm_dividend_yield_label": "TTM 配当利回り",
+        "latest_ex_dividend_label": "直近の権利落ち日",
+        "related_boards_heading": "関連セクター",
+        "board_name_label": "セクター",
+        "board_type_label": "種別",
+        "board_status_label": "セクター動向",
+        "board_change_pct_label": "セクター騰落率",
+        "leading_board_label": "上昇主導",
+        "lagging_board_label": "下落主導",
+    },
 }
 
 _DECISION_INTENT_NEGATIONS = (
@@ -585,7 +744,7 @@ def _is_placeholder_stock_name(value: Any, code: Any = None) -> bool:
     lowered = text.lower()
     if lowered in {"n/a", "na", "none", "null", "unknown"}:
         return True
-    if text in {"-", "—", "未知", "待补充"}:
+    if text in {"-", "—", "未知", "待补充", "未定", "不明"}:
         return True
 
     code_text = str(code or "").strip()
@@ -816,6 +975,17 @@ def get_sentiment_label(score: int, language: Optional[str]) -> str:
         if score >= 20:
             return "Bearish"
         return "Very Bearish"
+
+    if normalized == "ja":
+        if score >= 80:
+            return "非常に楽観"
+        if score >= 60:
+            return "楽観"
+        if score >= 40:
+            return "中立"
+        if score >= 20:
+            return "悲観"
+        return "非常に悲観"
 
     if score >= 80:
         return "极度乐观"
