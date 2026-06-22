@@ -5,7 +5,7 @@
 ===================================
 
 职责：
-1. 根据 MARKET_REVIEW_REGION 配置选择市场区域（cn / hk / us / both）
+1. 根据 MARKET_REVIEW_REGION 配置选择市场区域（cn / hk / us / jp / both）
 2. 执行大盘复盘分析并生成复盘报告
 3. 保存和发送复盘报告
 """
@@ -37,9 +37,12 @@ _MARKET_REVIEW_MARKETS = (
     ('cn', 'cn_title', 'A 股'),
     ('hk', 'hk_title', '港股'),
     ('us', 'us_title', '美股'),
+    ('jp', 'jp_title', '日股'),
 )
 _MARKET_REVIEW_REGION_ORDER = tuple(market for market, _, _ in _MARKET_REVIEW_MARKETS)
 _VALID_MARKET_REVIEW_REGIONS = frozenset(_MARKET_REVIEW_REGION_ORDER)
+# 'both' 仅展开为 cn/hk/us（保持既有语义，日股需显式选择 jp 或逗号列表）
+_BOTH_REGION_ORDER = ('cn', 'hk', 'us')
 
 
 @dataclass
@@ -99,7 +102,18 @@ def _get_market_review_text(language: str) -> dict[str, str]:
             "cn_title": "# A-share Market Recap",
             "us_title": "# US Market Recap",
             "hk_title": "# HK Market Recap",
+            "jp_title": "# Japan Market Recap",
             "separator": "> Next market recap follows",
+        }
+    if normalized == "ja":
+        return {
+            "root_title": "# 🎯 市場リキャップ",
+            "push_title": "🎯 市場リキャップ",
+            "cn_title": "# 中国A株市場リキャップ",
+            "us_title": "# 米国市場リキャップ",
+            "hk_title": "# 香港市場リキャップ",
+            "jp_title": "# 日本株市場リキャップ",
+            "separator": "> 次の市場リキャップへ続く",
         }
     return {
         "root_title": "# 🎯 大盘复盘",
@@ -107,6 +121,7 @@ def _get_market_review_text(language: str) -> dict[str, str]:
         "cn_title": "# A股大盘复盘",
         "us_title": "# 美股大盘复盘",
         "hk_title": "# 港股大盘复盘",
+        "jp_title": "# 日股大盘复盘",
         "separator": "> 以下为下一市场大盘复盘",
     }
 
@@ -116,7 +131,7 @@ def _resolve_market_review_regions(raw_region: Optional[str]) -> list[str]:
 
     region = str(raw_region or 'cn').strip().lower()
     if region == 'both':
-        return list(_MARKET_REVIEW_REGION_ORDER)
+        return list(_BOTH_REGION_ORDER)
     if ',' in region:
         requested = {
             item.strip().lower()

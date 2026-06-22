@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Market strategy blueprints for CN/HK/US daily market recap."""
+"""Market strategy blueprints for CN/HK/US/JP daily market recap."""
 
 from dataclasses import dataclass
 from typing import List
@@ -47,7 +47,12 @@ class MarketStrategyBlueprint:
     def to_markdown_block(self) -> str:
         """Render blueprint as markdown section for template fallback report."""
         dims = "\n".join([f"- **{dim.name}**: {dim.objective}" for dim in self.dimensions])
-        section_title = "### VI. Strategy Framework" if self.region == "us" else "### 六、策略框架"
+        if self.region == "us":
+            section_title = "### VI. Strategy Framework"
+        elif self.region == "jp":
+            section_title = "### 六、戦略フレームワーク"
+        else:
+            section_title = "### 六、策略框架"
         return f"{section_title}\n{dims}\n"
 
 
@@ -163,10 +168,46 @@ HK_BLUEPRINT = MarketStrategyBlueprint(
 )
 
 
+JP_BLUEPRINT = MarketStrategyBlueprint(
+    region="jp",
+    title="日本株市場 三段階リキャップ戦略",
+    positioning="日経225/TOPIXのトレンド、海外投資家フロー、テーマ・セクター循環に着目し、翌営業日の取引計画を立てる。",
+    principles=[
+        "まず日経225/TOPIX/グロース市場の方向、次に海外投資家フロー、最後にセクターの持続性を見る。",
+        "結論は必ずポジション・タイミング・リスク管理アクションに落とし込む。",
+        "判断は当日データと直近3日のニュースに基づき、未確認情報を推測しない。",
+    ],
+    dimensions=[
+        StrategyDimension(
+            name="トレンド構造",
+            objective="市場が上昇・もみ合い・守りのどの局面かを判断する。",
+            checkpoints=["日経225/TOPIX/グロース市場が同方向か", "出来高を伴う上昇か縮小を伴う下落か", "主要な支持・抵抗を突破したか"],
+        ),
+        StrategyDimension(
+            name="資金・心理",
+            objective="海外投資家のリスク選好と市場心理の温度を見極める。",
+            checkpoints=["海外投資家の売買動向と規模", "円相場と日銀・政策の含意", "市場の広がりと主力銘柄の集中度"],
+        ),
+        StrategyDimension(
+            name="主力セクター",
+            objective="取引対象となる主力テーマと回避方向を抽出する。",
+            checkpoints=["半導体/輸出関連のトレンド持続性", "金融/不動産の金利感応度", "ディフェンシブとグロースの循環"],
+        ),
+    ],
+    action_framework=[
+        "攻め：指数が共振して上昇 + 出来高拡大 + 主力テーマ強化。",
+        "均衡：指数の分化や縮小もみ合い、ポジションを抑え確認を待つ。",
+        "守り：指数が弱含み + ボラティリティ上昇、リスク管理と縮小を優先。",
+    ],
+)
+
+
 def get_market_strategy_blueprint(region: str) -> MarketStrategyBlueprint:
     """Return strategy blueprint by market region."""
     if region == "us":
         return US_BLUEPRINT
     if region == "hk":
         return HK_BLUEPRINT
+    if region == "jp":
+        return JP_BLUEPRINT
     return CN_BLUEPRINT

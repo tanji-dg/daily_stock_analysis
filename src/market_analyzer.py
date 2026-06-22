@@ -139,7 +139,7 @@ class MarketAnalyzer:
         self.search_service = search_service
         self.analyzer = analyzer
         self.data_manager = DataFetcherManager()
-        self.region = region if region in ("cn", "us", "hk") else "cn"
+        self.region = region if region in ("cn", "us", "hk", "jp") else "cn"
         self.profile: MarketProfile = get_profile(self.region)
         self.strategy = get_market_strategy_blueprint(self.region)
 
@@ -162,6 +162,12 @@ class MarketAnalyzer:
             return "US market" if review_language == "en" else "美股市场"
         if self.region == "hk":
             return "Hong Kong market" if review_language == "en" else "港股市场"
+        if self.region == "jp":
+            if review_language == "en":
+                return "Japan market"
+            if review_language == "ja":
+                return "日本株市場"
+            return "日股市场"
         if review_language == "en":
             return "A-share market"
         return "A股市场"
@@ -172,13 +178,20 @@ class MarketAnalyzer:
             return "USD bn" if self._get_review_language() == "en" else "十亿美元"
         if self.region == "hk":
             return "HKD bn" if self._get_review_language() == "en" else "十亿港元"
+        if self.region == "jp":
+            lang = self._get_review_language()
+            if lang == "en":
+                return "JPY bn"
+            if lang == "ja":
+                return "十億円"
+            return "十亿日元"
         return "CNY 100m" if self._get_review_language() == "en" else "亿"
 
     def _format_turnover_value(self, amount_raw: float) -> str:
         """Format raw turnover according to market-specific units."""
         if amount_raw == 0.0:
             return "N/A"
-        if self.region in ("us", "hk"):
+        if self.region in ("us", "hk", "jp"):
             return f"{amount_raw / 1e9:.2f}"
         if amount_raw > 1e6:
             return f"{amount_raw / 1e8:.0f}"
@@ -193,19 +206,37 @@ class MarketAnalyzer:
         return "🟢" if change_pct > 0 else "🔴"
 
     def _get_review_title(self, date: str) -> str:
-        if self._get_review_language() == "en":
-            market_names = {"us": "US Market Recap", "hk": "HK Market Recap"}
+        review_language = self._get_review_language()
+        if review_language == "en":
+            market_names = {
+                "us": "US Market Recap",
+                "hk": "HK Market Recap",
+                "jp": "Japan Market Recap",
+            }
             market_name = market_names.get(self.region, "A-share Market Recap")
             return f"## {date} {market_name}"
+        if review_language == "ja":
+            market_names = {
+                "us": "米国市場リキャップ",
+                "hk": "香港市場リキャップ",
+                "jp": "日本株市場リキャップ",
+                "cn": "中国A株市場リキャップ",
+            }
+            return f"## {date} {market_names.get(self.region, '市場リキャップ')}"
         return f"## {date} 大盘复盘"
 
     def _get_index_hint(self) -> str:
-        if self._get_review_language() == "en":
+        review_language = self._get_review_language()
+        if review_language == "en":
             if self.region == "us":
                 return "Analyze the key moves in the S&P 500, Nasdaq, Dow, and other major indices."
             if self.region == "hk":
                 return "Analyze the key moves in the HSI, Hang Seng Tech, HSCEI, and other major indices."
+            if self.region == "jp":
+                return "Analyze the key moves in the Nikkei 225, TOPIX, and other major Japanese indices."
             return "Analyze the price action in the SSE, SZSE, ChiNext, and other major indices."
+        if review_language == "ja" and self.region == "jp":
+            return "日経225、TOPIX、東証グロース市場指数などの値動きの特徴を分析する。"
         return self.profile.prompt_index_hint
 
     def _get_strategy_prompt_block(self) -> str:
@@ -493,6 +524,11 @@ Focus on index trend, liquidity, and sector rotation to shape the next-session t
             "cn": "大盘" if review_language == "zh" else "A-share market",
             "us": "美股市场" if review_language == "zh" else "US market",
             "hk": "港股市场" if review_language == "zh" else "HK market",
+            "jp": (
+                "日本株市場"
+                if review_language == "ja"
+                else ("日股市场" if review_language == "zh" else "Japan market")
+            ),
         }
         
         try:
@@ -1392,7 +1428,11 @@ Output the report content directly, no extra commentary.
 - **Leaders**: {top_text or "N/A"}
 - **Laggards**: {bottom_text or "N/A"}
 """
-            market_names = {"us": "US Market Recap", "hk": "HK Market Recap"}
+            market_names = {
+                "us": "US Market Recap",
+                "hk": "HK Market Recap",
+                "jp": "Japan Market Recap",
+            }
             market_name = market_names.get(self.region, "A-share Market Recap")
             report = f"""## {overview.date} {market_name}
 

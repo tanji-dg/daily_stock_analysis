@@ -67,10 +67,26 @@ HK_PROFILE = MarketProfile(
 )
 
 
+JP_PROFILE = MarketProfile(
+    region="jp",
+    mood_index_code="N225",
+    news_queries=[
+        "日経平均 相場 まとめ",
+        "日本株 市場 動向",
+        "Nikkei 225 TOPIX market",
+    ],
+    prompt_index_hint="日経225、TOPIX、東証グロース市場指数などの値動きの特徴を分析する",
+    has_market_stats=False,
+    has_sector_rankings=False,
+)
+
+
 def get_profile(region: str) -> MarketProfile:
     """根据 region 返回对应的 MarketProfile"""
     if region == "us":
         return US_PROFILE
     if region == "hk":
         return HK_PROFILE
+    if region == "jp":
+        return JP_PROFILE
     return CN_PROFILE
