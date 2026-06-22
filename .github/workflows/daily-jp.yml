@@ -24,6 +24,6 @@ jobs:
     with:
       mode: full
       region: jp
-      stock_list: '7203.T,285A.T,316A.T'
+      stock_list: '285A.T,316A.T'
       force_run: ${{ github.event.inputs.force_run == 'true' }}
     secrets: inherit

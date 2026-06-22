@@ -24,6 +24,6 @@ jobs:
     with:
       mode: full
       region: us
-      stock_list: 'MU,NBIS,AVGO,AMD'
+      stock_list: 'MU,NBIS,AVGO,AMD,SPX'
       force_run: ${{ github.event.inputs.force_run == 'true' }}
     secrets: inherit
