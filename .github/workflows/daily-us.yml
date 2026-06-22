@@ -1,0 +1,29 @@
+name: Daily Analysis (US)
+
+# Runs after the US close: US single-stock analysis plus the US market recap.
+# Reuses 00-daily-analysis.yml via workflow_call (secrets inherited).
+on:
+  schedule:
+    # UTC 22:00 = JST 07:00 next day; ~17:00 ET, after the regular US close
+    - cron: '0 22 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: 'Force run (skip the trading-day check)'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: stock-analysis-us
+  cancel-in-progress: false
+
+jobs:
+  run:
+    uses: ./.github/workflows/00-daily-analysis.yml
+    with:
+      mode: full
+      region: us
+      stock_list: 'MU'
+      force_run: ${{ github.event.inputs.force_run == 'true' }}
+    secrets: inherit

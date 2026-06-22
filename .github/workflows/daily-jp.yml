@@ -1,0 +1,29 @@
+name: Daily Analysis (Japan)
+
+# Runs after the Tokyo close (15:00 JST): Japanese single-stock analysis plus the
+# Japan market recap. Reuses 00-daily-analysis.yml via workflow_call (secrets inherited).
+on:
+  schedule:
+    # UTC 06:30 = JST 15:30 (weekdays, after the Tokyo close)
+    - cron: '30 6 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      force_run:
+        description: 'Force run (skip the trading-day check)'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: stock-analysis-jp
+  cancel-in-progress: false
+
+jobs:
+  run:
+    uses: ./.github/workflows/00-daily-analysis.yml
+    with:
+      mode: full
+      region: jp
+      stock_list: '7203.T,285A.T'
+      force_run: ${{ github.event.inputs.force_run == 'true' }}
+    secrets: inherit

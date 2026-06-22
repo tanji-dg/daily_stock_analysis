@@ -555,7 +555,8 @@ def compute_effective_region(
         'cn' | 'hk' | 'us' | 'jp' | 'both' | comma list: effective subset for today
     """
     raw = (config_region or "cn").strip().lower()
-    # 逗号分隔的多市场列表（如 'jp,us'）：仅保留今日开市的子集，保持顺序去重
+    # Comma-separated multi-market list (e.g. 'jp,us'): keep only the markets open
+    # today, preserving order and removing duplicates.
     if "," in raw:
         singles = ("cn", "hk", "us", "jp")
         present: list[str] = []

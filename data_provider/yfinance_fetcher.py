@@ -84,7 +84,8 @@ class YfinanceFetcher(BaseFetcher):
         code = (stock_code or "").strip().upper()
         if code.endswith(".T"):
             base = code[:-2]
-            # 东证新式英数字混合代码（首位数字 + 数字/大写字母，4~5 位，如 285A=铠侠）也支持
+            # Also accept new TSE alphanumeric codes (first char a digit, rest
+            # digits/uppercase letters, length 4-5, e.g. 285A = Kioxia).
             return (
                 base.isascii()
                 and base.isalnum()
@@ -448,9 +449,11 @@ class YfinanceFetcher(BaseFetcher):
 
     def _get_jp_main_indices(self, yf) -> Optional[List[Dict[str, Any]]]:
         """获取日本主要指数行情（日经225、TOPIX），复用 _fetch_yf_ticker_data。"""
-        # yfinance（query*.finance.yahoo.com）无法获取 TOPIX 指数本体：
-        #   ^TOPX / ^TPX 均返回 no price data；998405.T（雅虎日本 TOPIX 代码）在美区 API 返回 404。
-        # 因此用 NEXT FUNDS TOPIX 连动 ETF(1306.T) 作为 TOPIX 代理（涨跌幅≈TOPIX，价位为 ETF 价非指数点）。
+        # yfinance (query*.finance.yahoo.com) cannot fetch the TOPIX index itself:
+        #   ^TOPX / ^TPX both return no price data; 998405.T (Yahoo Japan's TOPIX code)
+        #   returns 404 on the US-region API.
+        # Use the NEXT FUNDS TOPIX ETF (1306.T) as a TOPIX proxy (its % change tracks
+        # TOPIX closely; the level is the ETF price, not the index points).
         jp_indices = {
             'N225': ('^N225', '日经225'),
             'TOPX': ('1306.T', 'TOPIX连动ETF(1306)'),

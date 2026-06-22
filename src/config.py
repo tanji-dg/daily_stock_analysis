@@ -2306,7 +2306,7 @@ class Config:
         v = (value or 'cn').strip().lower()
         if v in ('cn', 'us', 'hk', 'jp', 'both'):
             return v
-        # 逗号分隔的多市场列表（如 "jp,us"），保留用户顺序并去重
+        # Comma-separated multi-market list (e.g. "jp,us"); keep user order, dedupe.
         if ',' in v:
             valid_singles = ('cn', 'hk', 'us', 'jp')
             parts: list[str] = []

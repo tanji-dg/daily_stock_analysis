@@ -5,7 +5,7 @@
 ===================================
 
 职责：
-1. 根据 MARKET_REVIEW_REGION 配置选择市场区域（cn / hk / us / jp / both）
+1. Select market region(s) from MARKET_REVIEW_REGION (cn / hk / us / jp / both, or a comma list)
 2. 执行大盘复盘分析并生成复盘报告
 3. 保存和发送复盘报告
 """
@@ -41,7 +41,8 @@ _MARKET_REVIEW_MARKETS = (
 )
 _MARKET_REVIEW_REGION_ORDER = tuple(market for market, _, _ in _MARKET_REVIEW_MARKETS)
 _VALID_MARKET_REVIEW_REGIONS = frozenset(_MARKET_REVIEW_REGION_ORDER)
-# 'both' 仅展开为 cn/hk/us（保持既有语义，日股需显式选择 jp 或逗号列表）
+# 'both' expands to cn/hk/us only (keep existing semantics; Japan must be selected
+# explicitly via 'jp' or a comma list).
 _BOTH_REGION_ORDER = ('cn', 'hk', 'us')
 
 
@@ -277,7 +278,10 @@ def run_market_review(
             if save_report_file:
                 # 保存报告到文件
                 date_str = datetime.now().strftime('%Y%m%d')
-                report_filename = f"market_review_{date_str}.md"
+                # Include the market in the filename so per-market runs do not overwrite
+                # each other (e.g. market_review_20260622_jp.md / _us.md).
+                region_slug = (persist_region or 'cn').replace(',', '-')
+                report_filename = f"market_review_{date_str}_{region_slug}.md"
                 filepath = notifier.save_report_to_file(
                     markdown_report,
                     report_filename

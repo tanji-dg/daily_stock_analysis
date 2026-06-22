@@ -614,16 +614,22 @@ def _save_reused_market_review_report(
     body = str(market_report or "").strip()
     if not body:
         return
-    title = (
-        "# 🎯 Market Review"
-        if str(getattr(config, "report_language", "zh")).strip().lower() == "en"
-        else "# 🎯 大盘复盘"
-    )
-    if not any(body.startswith(item) for item in ("# 🎯 大盘复盘", "# 🎯 Market Review")):
+    _lang = str(getattr(config, "report_language", "zh")).strip().lower()
+    if _lang == "en":
+        title = "# 🎯 Market Review"
+    elif _lang.startswith("ja") or _lang.startswith("jp"):
+        title = "# 🎯 市場リキャップ"
+    else:
+        title = "# 🎯 大盘复盘"
+    if not any(
+        body.startswith(item)
+        for item in ("# 🎯 大盘复盘", "# 🎯 Market Review", "# 🎯 市場リキャップ")
+    ):
         body = f"{title}\n\n{body}"
     try:
         date_str = datetime.now().strftime('%Y%m%d')
-        report_filename = f"market_review_{date_str}.md"
+        region_slug = (str(region or "cn")).replace(',', '-')
+        report_filename = f"market_review_{date_str}_{region_slug}.md"
         filepath = notifier.save_report_to_file(body, report_filename)
         logger.info(
             "[MarketReview] component=market_review action=save_reused_report "

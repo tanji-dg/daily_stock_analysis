@@ -179,9 +179,10 @@ def _is_hk_market(code: str) -> bool:
 
 
 def _is_jp_market(code: str) -> bool:
-    """判定是否为日本 Yahoo Finance suffix 代码（如 7203.T、285A.T）。
+    """Return True for a Japan Yahoo Finance suffix code (e.g. 7203.T, 285A.T).
 
-    支持东证新式英数字混合代码（首位数字 + 数字/大写字母，共 4~5 位，如 285A=铠侠）。
+    Also accepts the new TSE alphanumeric codes: first char a digit, the rest
+    digits/uppercase letters, total length 4-5 (e.g. 285A = Kioxia).
     """
     normalized = (code or "").strip().upper()
     if not normalized.endswith(".T"):

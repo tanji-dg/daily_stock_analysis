@@ -1,10 +1,6 @@
 name: 每日股票分析
 
 on:
-  # 定时触发 - 每天北京时间 18:00 (UTC 10:00)
-  schedule:
-    - cron: '0 10 * * 1-5'     # 周一到周五，UTC 10:00 = 北京时间 18:00
-  
   # 手动触发
   workflow_dispatch:
     inputs:
@@ -17,8 +13,38 @@ on:
           - full          # 完整分析（股票+大盘）
           - market-only   # 仅大盘复盘
           - stocks-only   # 仅股票分析
+      region:
+        description: '大盘复盘市场（留空则用仓库变量 MARKET_REVIEW_REGION；可填 cn/hk/us/jp/both 或 jp,us）'
+        required: false
+        default: ''
+        type: string
+      stock_list:
+        description: '自选股列表（留空则用仓库变量 STOCK_LIST）'
+        required: false
+        default: ''
+        type: string
       force_run:
         description: '强制运行（跳过交易日检查）'
+        required: false
+        default: false
+        type: boolean
+
+  # 可复用工作流：供按市场分时的 daily-jp.yml / daily-us.yml 调用
+  workflow_call:
+    inputs:
+      mode:
+        required: false
+        default: 'full'
+        type: string
+      region:
+        required: false
+        default: ''
+        type: string
+      stock_list:
+        required: false
+        default: ''
+        type: string
+      force_run:
         required: false
         default: false
         type: boolean
@@ -349,8 +375,8 @@ jobs:
           # ==========================================
           # 自选股配置
           # ==========================================
-          STOCK_LIST: ${{ vars.STOCK_LIST || secrets.STOCK_LIST || '600519' }}
-          MARKET_REVIEW_REGION: ${{ vars.MARKET_REVIEW_REGION || secrets.MARKET_REVIEW_REGION || 'cn' }}
+          STOCK_LIST: ${{ inputs.stock_list != '' && inputs.stock_list || vars.STOCK_LIST || secrets.STOCK_LIST || '600519' }}
+          MARKET_REVIEW_REGION: ${{ inputs.region != '' && inputs.region || vars.MARKET_REVIEW_REGION || secrets.MARKET_REVIEW_REGION || 'cn' }}
           MARKET_REVIEW_COLOR_SCHEME: ${{ vars.MARKET_REVIEW_COLOR_SCHEME || secrets.MARKET_REVIEW_COLOR_SCHEME || 'green_up' }}
           
           # ==========================================
@@ -388,7 +414,7 @@ jobs:
           fi
 
           # 判断运行模式
-          MODE="${{ github.event.inputs.mode || 'full' }}"
+          MODE="${{ inputs.mode || 'full' }}"
           
           echo "=========================================="
           echo "🚀 A股自选股智能分析系统"
@@ -458,7 +484,7 @@ jobs:
           
           # 构建命令行参数
           FORCE_RUN_ARG=""
-          if [ "${{ github.event.inputs.force_run }}" = "true" ]; then
+          if [ "${{ inputs.force_run }}" = "true" ]; then
             FORCE_RUN_ARG="--force-run"
             echo "⚡ 已启用强制运行模式（跳过交易日检查）"
           fi
