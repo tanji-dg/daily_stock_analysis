@@ -545,18 +545,29 @@ def compute_effective_region(
     Compute effective market review region given config and open markets.
 
     Args:
-        config_region: From MARKET_REVIEW_REGION ('cn' | 'hk' | 'us' | 'jp' | 'both')
+        config_region: From MARKET_REVIEW_REGION ('cn' | 'hk' | 'us' | 'jp' | 'both'
+            | comma list like 'jp,us')
         open_markets: Markets open today
 
     Returns:
         None: caller uses config default (check disabled)
         '': all relevant markets closed, skip market review
-        'cn' | 'hk' | 'us' | 'jp' | 'both': effective subset for today
+        'cn' | 'hk' | 'us' | 'jp' | 'both' | comma list: effective subset for today
     """
-    if config_region not in ("cn", "hk", "us", "jp", "both"):
-        config_region = "cn"
-    if config_region in ("cn", "hk", "us", "jp"):
-        return config_region if config_region in open_markets else ""
+    raw = (config_region or "cn").strip().lower()
+    # 逗号分隔的多市场列表（如 'jp,us'）：仅保留今日开市的子集，保持顺序去重
+    if "," in raw:
+        singles = ("cn", "hk", "us", "jp")
+        present: list[str] = []
+        for item in raw.split(","):
+            item = item.strip()
+            if item in singles and item in open_markets and item not in present:
+                present.append(item)
+        return ",".join(present)
+    if raw not in ("cn", "hk", "us", "jp", "both"):
+        raw = "cn"
+    if raw in ("cn", "hk", "us", "jp"):
+        return raw if raw in open_markets else ""
     # both: return only the markets that are actually open today
     parts = [m for m in ("cn", "hk", "us") if m in open_markets]
     if not parts:

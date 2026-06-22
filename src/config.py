@@ -2306,8 +2306,19 @@ class Config:
         v = (value or 'cn').strip().lower()
         if v in ('cn', 'us', 'hk', 'jp', 'both'):
             return v
+        # 逗号分隔的多市场列表（如 "jp,us"），保留用户顺序并去重
+        if ',' in v:
+            valid_singles = ('cn', 'hk', 'us', 'jp')
+            parts: list[str] = []
+            for item in v.split(','):
+                item = item.strip()
+                if item in valid_singles and item not in parts:
+                    parts.append(item)
+            if parts:
+                return ','.join(parts)
         logging.getLogger(__name__).warning(
-            f"MARKET_REVIEW_REGION 配置值 '{value}' 无效，已回退为默认值 'cn'（合法值：cn / hk / us / jp / both）"
+            f"MARKET_REVIEW_REGION 配置值 '{value}' 无效，已回退为默认值 'cn'"
+            f"（合法值：cn / hk / us / jp / both，或逗号分隔组合如 jp,us）"
         )
         return 'cn'
 

@@ -98,6 +98,22 @@ def test_compute_effective_region_handles_jp_and_keeps_both() -> None:
     # 'both' は cn/hk/us のみ（日股が開いていても含めない）
     assert compute_effective_region("both", {"cn", "hk", "us", "jp"}) == "cn,hk,us"
     assert compute_effective_region("cn", {"cn"}) == "cn"
+    # カンマ区切り（jp,us）: 開市している市場のみを順序保持で返す
+    assert compute_effective_region("jp,us", {"jp", "us"}) == "jp,us"
+    assert compute_effective_region("jp,us", {"jp"}) == "jp"
+    assert compute_effective_region("jp,us", {"cn"}) == ""
+
+
+def test_parse_market_review_region_accepts_comma_list() -> None:
+    from src.config import Config
+
+    assert Config._parse_market_review_region("jp,us") == "jp,us"
+    assert Config._parse_market_review_region("us, jp") == "us,jp"
+    assert Config._parse_market_review_region("jp,jp,us") == "jp,us"  # 去重
+    assert Config._parse_market_review_region("jp,xx") == "jp"  # 無効値を除外
+    assert Config._parse_market_review_region("jp") == "jp"
+    assert Config._parse_market_review_region("both") == "both"
+    assert Config._parse_market_review_region("xx") == "cn"  # 全て無効→cn
 
 
 def test_resolve_market_review_regions_jp_standalone() -> None:
