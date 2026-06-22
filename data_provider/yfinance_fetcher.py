@@ -444,7 +444,8 @@ class YfinanceFetcher(BaseFetcher):
         """获取日本主要指数行情（日经225、TOPIX），复用 _fetch_yf_ticker_data。"""
         jp_indices = {
             'N225': ('^N225', '日经225'),
-            'TOPX': ('^TOPX', '东证指数'),
+            # Yahoo Finance 的 TOPIX 正确符号为 ^TPX（^TOPX 已下线，会返回 no price data）
+            'TOPX': ('^TPX', '东证指数'),
         }
         results = []
         try:
