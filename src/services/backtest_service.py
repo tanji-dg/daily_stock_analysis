@@ -108,11 +108,23 @@ class BacktestService:
                         )
                     )
                     continue
-                start_daily = self.stock_repo.get_start_daily(code=analysis.code, analysis_date=analysis_date)
+                daily_code_candidates = self._build_daily_code_candidates(analysis.code)
+                start_daily = self._get_start_daily_for_candidates(
+                    code_candidates=daily_code_candidates,
+                    analysis_date=analysis_date,
+                )
 
                 if start_daily is None or start_daily.close is None:
-                    self._try_fill_daily_data(code=analysis.code, analysis_date=analysis_date, eval_window_days=eval_window_days)
-                    start_daily = self.stock_repo.get_start_daily(code=analysis.code, analysis_date=analysis_date)
+                    refill_code = daily_code_candidates[0] if daily_code_candidates else analysis.code
+                    self._try_fill_daily_data(
+                        code=refill_code,
+                        analysis_date=analysis_date,
+                        eval_window_days=eval_window_days,
+                    )
+                    start_daily = self._get_start_daily_for_candidates(
+                        code_candidates=daily_code_candidates,
+                        analysis_date=analysis_date,
+                    )
 
                 if start_daily is None or start_daily.close is None:
                     insufficient += 1
@@ -130,16 +142,23 @@ class BacktestService:
                     )
                     continue
 
+                matched_daily_code = start_daily.code or (
+                    daily_code_candidates[0] if daily_code_candidates else analysis.code
+                )
                 forward_bars = self.stock_repo.get_forward_bars(
-                    code=analysis.code,
+                    code=matched_daily_code,
                     analysis_date=start_daily.date,
                     eval_window_days=int(eval_window_days),
                 )
 
                 if len(forward_bars) < int(eval_window_days):
-                    self._try_fill_daily_data(code=analysis.code, analysis_date=start_daily.date, eval_window_days=eval_window_days)
+                    self._try_fill_daily_data(
+                        code=matched_daily_code,
+                        analysis_date=start_daily.date,
+                        eval_window_days=eval_window_days,
+                    )
                     forward_bars = self.stock_repo.get_forward_bars(
-                        code=analysis.code,
+                        code=matched_daily_code,
                         analysis_date=start_daily.date,
                         eval_window_days=int(eval_window_days),
                     )
@@ -370,6 +389,37 @@ class BacktestService:
                 continue
             filtered.append(analysis)
         return filtered
+
+    def _get_start_daily_for_candidates(self, *, code_candidates: List[str], analysis_date: date):
+        best_daily = None
+        best_rank = len(code_candidates)
+        for rank, candidate in enumerate(code_candidates):
+            daily = self.stock_repo.get_start_daily(code=candidate, analysis_date=analysis_date)
+            if daily is None:
+                continue
+            if best_daily is None or daily.date > best_daily.date or (
+                daily.date == best_daily.date and rank < best_rank
+            ):
+                best_daily = daily
+                best_rank = rank
+        return best_daily
+
+    @staticmethod
+    def _build_daily_code_candidates(code: Optional[str]) -> List[str]:
+        if not code:
+            return []
+
+        raw_code = str(code).strip()
+        if not raw_code:
+            return []
+
+        raw_code = raw_code.upper()
+        normalized_code = normalize_stock_code(raw_code)
+        candidates = [raw_code]
+        if normalized_code and normalized_code != raw_code:
+            candidates.append(normalized_code)
+        candidates.extend(BacktestRepository._build_market_code_variants(raw_code, normalized_code))
+        return list(dict.fromkeys(candidate for candidate in candidates if candidate))
 
     @staticmethod
     def _normalize_code(code: Optional[str]) -> Optional[str]:

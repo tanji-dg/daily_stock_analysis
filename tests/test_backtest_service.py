@@ -309,6 +309,61 @@ class BacktestServiceTestCase(unittest.TestCase):
         )
         self.assertEqual({row["code"] for row in matched["items"]}, {"600519", "600519.SH"})
 
+    def test_run_backtest_uses_bare_daily_bars_for_dotted_history_record(self) -> None:
+        with self.db.get_session() as session:
+            session.add(
+                AnalysisHistory(
+                    query_id="q_dot_history_bare_daily",
+                    code="600519.SH",
+                    name="贵州茅台",
+                    report_type="simple",
+                    sentiment_score=60,
+                    operation_advice="买入",
+                    trend_prediction="看多",
+                    analysis_summary="dotted history with bare daily data",
+                    stop_loss=None,
+                    take_profit=None,
+                    created_at=datetime(2024, 2, 5, 0, 0, 0),
+                    context_snapshot=json.dumps({"enhanced_context": {"date": "2024-02-05"}}),
+                )
+            )
+            session.add(
+                StockDaily(
+                    code="600519",
+                    date=date(2024, 2, 5),
+                    open=100.0,
+                    high=100.0,
+                    low=100.0,
+                    close=100.0,
+                )
+            )
+            session.add(
+                StockDaily(code="600519", date=date(2024, 2, 6), high=106.0, low=99.0, close=105.0)
+            )
+            session.commit()
+
+        service = BacktestService(self.db)
+        stats = service.run_backtest(
+            code="600519",
+            force=False,
+            eval_window_days=1,
+            min_age_days=0,
+            analysis_date_from=date(2024, 2, 5),
+            analysis_date_to=date(2024, 2, 5),
+            limit=10,
+        )
+
+        self.assertEqual(stats["processed"], 1)
+        self.assertEqual(stats["saved"], 1)
+        self.assertEqual(stats["completed"], 1)
+        self.assertEqual(stats["insufficient"], 0)
+
+        with self.db.get_session() as session:
+            result = session.query(BacktestResult).filter(BacktestResult.code == "600519.SH").one()
+            self.assertEqual(result.analysis_date, date(2024, 2, 5))
+            self.assertEqual(result.start_price, 100.0)
+            self.assertEqual(result.end_close, 105.0)
+
     def test_run_backtest_supports_us_suffix_code_shape_when_run_with_suffix(self) -> None:
         self._seed_analysis(
             query_id="q_aapl",
