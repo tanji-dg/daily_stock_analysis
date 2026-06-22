@@ -46,7 +46,13 @@ def format_decision_signal_excerpt(summary: Any, report_language: str = "zh") ->
 
     if not isinstance(summary, dict) or not summary:
         return ""
-    language = "en" if str(report_language or "").lower().startswith("en") else "zh"
+    _lang_raw = str(report_language or "").lower()
+    if _lang_raw.startswith("en"):
+        language = "en"
+    elif _lang_raw.startswith("ja") or _lang_raw.startswith("jp"):
+        language = "ja"
+    else:
+        language = "zh"
     labels = {
         "zh": {
             "heading": "AI 决策信号",
@@ -65,6 +71,15 @@ def format_decision_signal_excerpt(summary: Any, report_language: str = "zh") ->
             "watch_conditions": "Watch",
             "risk_summary": "Risk",
             "source_report_id": "Report",
+        },
+        "ja": {
+            "heading": "AI 判断シグナル",
+            "action": "アクション",
+            "horizon": "期間",
+            "reason": "理由",
+            "watch_conditions": "観察条件",
+            "risk_summary": "リスク",
+            "source_report_id": "レポート",
         },
     }[language]
 

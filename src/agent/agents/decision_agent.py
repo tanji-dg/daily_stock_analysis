@@ -51,6 +51,8 @@ Requirements:
 """
             if report_language == "en":
                 return prompt + "\nAlways answer in English.\n"
+            if report_language == "ja":
+                return prompt + "\n常に日本語で回答すること。\n"
             return prompt + "\n默认使用中文回答。\n"
 
         skills = ""
@@ -125,6 +127,14 @@ limitation must be reflected in ``confidence_reason`` or ``data_limitations``.
 - Keep every JSON key unchanged.
 - `decision_type` must remain `buy|hold|sell`.
 - Write all human-readable JSON values in English.
+"""
+        if report_language == "ja":
+            return prompt + """
+
+## 出力言語
+- すべての JSON キー名は変更しないこと。
+- `decision_type` は必ず `buy|hold|sell` のままにすること。
+- ユーザー向けの人間が読むテキスト値はすべて日本語で記述すること。
 """
         return prompt + """
 

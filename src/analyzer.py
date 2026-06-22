@@ -1257,10 +1257,22 @@ def _capital_flow_bias_with_status(
 def _capital_flow_status_for_stability(reason: str, language: str) -> str:
     normalized = str(reason or "").strip().lower()
     if "not_supported" in normalized or "unsupported" in normalized or "not available" in normalized:
-        return "市场资金流服务暂不支持" if language == "zh" else "Capital flow source unsupported"
+        if language == "zh":
+            return "市场资金流服务暂不支持"
+        if language == "ja":
+            return "資金フローのデータソースが未対応"
+        return "Capital flow source unsupported"
     if "empty_stock_flow" in normalized or "missing" in normalized:
-        return "资金流数据缺失" if language == "zh" else "capital flow data unavailable"
-    return "资金流数据不可用" if language == "zh" else "capital flow unavailable"
+        if language == "zh":
+            return "资金流数据缺失"
+        if language == "ja":
+            return "資金フローのデータが欠落"
+        return "capital flow data unavailable"
+    if language == "zh":
+        return "资金流数据不可用"
+    if language == "ja":
+        return "資金フローのデータが利用不可"
+    return "capital flow unavailable"
 
 
 def _set_decision_stability_unavailable(
@@ -1276,7 +1288,15 @@ def _set_decision_stability_unavailable(
     result.dashboard = dashboard
     dashboard["decision_stability"] = {
         "applied": False,
-        "reason": "资金流不可用，未使用资金流校准" if language == "zh" else "Capital flow unavailable; stability calibration not applied",
+        "reason": (
+            "资金流不可用，未使用资金流校准"
+            if language == "zh"
+            else (
+                "資金フローが利用できないため、資金フロー補正は未適用"
+                if language == "ja"
+                else "Capital flow unavailable; stability calibration not applied"
+            )
+        ),
         "capital_flow_status": _capital_flow_status_for_stability(flow_status, language),
         "current_price": current_price,
         "support": support,
@@ -1316,8 +1336,13 @@ def _apply_hold_watch_dashboard(
     if not isinstance(core, dict):
         core = {}
         dashboard["core_conclusion"] = core
-    core["signal_type"] = "🟡持有观望" if language == "zh" else "🟡 Hold / Watch"
-    core["one_sentence"] = f"{advice}：{reason}" if language == "zh" else f"{advice}: {reason}"
+    if language == "zh":
+        core["signal_type"] = "🟡持有观望"
+    elif language == "ja":
+        core["signal_type"] = "🟡 保有・様子見"
+    else:
+        core["signal_type"] = "🟡 Hold / Watch"
+    core["one_sentence"] = f"{advice}：{reason}" if language in ("zh", "ja") else f"{advice}: {reason}"
 
     position_advice = core.get("position_advice")
     if not isinstance(position_advice, dict):
@@ -1339,7 +1364,7 @@ def _apply_hold_watch_dashboard(
     dashboard["decision_stability"] = stability
 
     if reason and reason not in str(result.risk_warning or ""):
-        sep = "；" if language == "zh" else "; "
+        sep = "；" if language in ("zh", "ja") else "; "
         result.risk_warning = f"{result.risk_warning}{sep}{reason}" if result.risk_warning else reason
     result.buy_reason = reason or result.buy_reason
 
@@ -1360,6 +1385,12 @@ def _downgrade_buy_without_capital_flow(
         no_position = "空仓先不追买，等待资金流恢复、支撑确认或有效突破后再行动。"
         has_position = "持仓以关键支撑为风控线，资金流恢复前控制仓位。"
         confidence = "低"
+    elif language == "ja":
+        advice = "保有して様子見"
+        reason = f"{status_text}。買い結論は資金面の確認を欠くため、まず様子見として扱う。"
+        no_position = "未保有なら追随買いせず、資金フローの回復・支持線の確認・有効な突破を待ってから動く。"
+        has_position = "保有分は主要な支持線をリスク管理ラインとし、資金フローが回復するまではポジションを抑える。"
+        confidence = "低い"
     else:
         advice = "Hold and watch"
         reason = f"{status_text}; the buy call lacks capital-flow confirmation, so treat it as watch-only."
@@ -1423,7 +1454,7 @@ def _set_structural_hold_wording(
     resistance: Optional[float],
     flow_bias: str,
 ) -> None:
-    advice = {
+    advice_map = {
         "zh": {
             "range": "震荡观望",
             "shakeout": "洗盘观察",
@@ -1434,7 +1465,16 @@ def _set_structural_hold_wording(
             "shakeout": "Shakeout watch",
             "hold": "Hold and watch",
         },
-    }[language].get(advice_key, "持有观察" if language == "zh" else "Hold and watch")
+        "ja": {
+            "range": "もみ合い様子見",
+            "shakeout": "ふるい落とし観察",
+            "hold": "保有して様子見",
+        },
+    }
+    advice_default = {"zh": "持有观察", "en": "Hold and watch", "ja": "保有して様子見"}
+    advice = advice_map.get(language, advice_map["zh"]).get(
+        advice_key, advice_default.get(language, advice_default["zh"])
+    )
     reason_templates = {
         "zh": {
             "buy_near_resistance": "价格接近压力位且主力资金未确认流入，不宜仅因短线反弹追买。",
@@ -1452,17 +1492,30 @@ def _set_structural_hold_wording(
             "hold_shakeout": "Price pulled back near support without confirmed outflow, which is better treated as a shakeout watch.",
             "hold_mid_range": "Price is between support and resistance with neutral fund flow, so range-bound watch is more actionable.",
         },
+        "ja": {
+            "buy_near_resistance": "株価が抵抗線に近く、主力資金の流入も確認できないため、短期の反発だけで追随買いするのは妥当でない。",
+            "buy_with_outflow": "主力資金の流出が買い結論と矛盾するため、支持線の確認か資金の戻りを待つべき。",
+            "sell_near_support": "株価が支持線に接近し、継続的な資金流出も見られないため、1日の下落だけで売るのは妥当でない。",
+            "sell_with_inflow": "主力資金の流入が売り結論と矛盾するため、まず保有して様子見とし、支持線割れを追跡する。",
+            "hold_shakeout": "株価が支持線付近まで押したが資金流出は確認できず、ふるい落とし観察として扱う方が適切。",
+            "hold_mid_range": "株価が支持線と抵抗線の間にあり資金フローも不明確なため、もみ合い様子見の方が実行しやすい。",
+        },
     }
-    reason = reason_templates[language].get(reason_key, "")
+    reason = reason_templates.get(language, reason_templates["zh"]).get(reason_key, "")
     result.operation_advice = advice
     if language == "zh" and "震荡" not in str(result.trend_prediction) and advice_key == "range":
         result.trend_prediction = "震荡"
     elif language == "en" and advice_key == "range":
         result.trend_prediction = "Sideways"
+    elif language == "ja" and advice_key == "range":
+        result.trend_prediction = "横ばい"
 
     if language == "zh":
         no_position = "空仓先不追涨杀跌，等待支撑确认、放量突破或资金回流后再行动。"
         has_position = "持仓以关键支撑为风控线，未跌破前以观察和分批控仓为主。"
+    elif language == "ja":
+        no_position = "未保有なら追随買い・狼狽売りを避け、支持線の確認・出来高を伴う突破・資金の戻りを待ってから動く。"
+        has_position = "保有分は主要な支持線をリスク管理ラインとし、割れるまでは観察と分割でのポジション管理を中心にする。"
     else:
         no_position = "Do not chase or panic; wait for support confirmation, breakout, or renewed inflow."
         has_position = "Use key support as the risk line and manage position size unless support fails."
