@@ -28,6 +28,10 @@ class BacktestRunResponse(BaseModel):
     completed: int = Field(..., description="完成回测数")
     insufficient: int = Field(..., description="数据不足数")
     errors: int = Field(..., description="错误数")
+    applied_eval_window_days: Optional[int] = Field(
+        ...,
+        description="实际生效的评估窗口（交易日数）",
+    )
     message: Optional[str] = Field(None, description="空结果或降级时的诊断说明")
     diagnostics: Dict[str, Any] = Field(default_factory=dict, description="回测筛选与诊断信息")
 

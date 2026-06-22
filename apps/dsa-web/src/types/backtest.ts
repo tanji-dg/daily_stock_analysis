@@ -25,6 +25,7 @@ export interface BacktestRunResponse {
   completed: number;
   insufficient: number;
   errors: number;
+  appliedEvalWindowDays?: number;
   message?: string | null;
   diagnostics?: Record<string, unknown>;
 }

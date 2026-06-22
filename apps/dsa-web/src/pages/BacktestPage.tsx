@@ -55,6 +55,20 @@ function normalizeBacktestCode(value: string): string | undefined {
   return trimmed.toUpperCase();
 }
 
+function parseEvalWindowDays(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const parsed = parseInt(trimmed, 10);
+  if (Number.isNaN(parsed) || parsed < 1) {
+    return undefined;
+  }
+
+  return parsed;
+}
+
 function labelFromMap(value: string | null | undefined, labels: Record<string, string>): string {
   if (!value) return '--';
   return labels[value] ?? value;
@@ -263,7 +277,7 @@ const BacktestPage: React.FC = () => {
   const [overallPerf, setOverallPerf] = useState<PerformanceMetrics | null>(null);
   const [stockPerf, setStockPerf] = useState<PerformanceMetrics | null>(null);
   const [isLoadingPerf, setIsLoadingPerf] = useState(false);
-  const effectiveWindowDays = evalDays ? parseInt(evalDays, 10) : overallPerf?.evalWindowDays;
+  const effectiveWindowDays = parseEvalWindowDays(evalDays) ?? overallPerf?.evalWindowDays;
   const isNextDayValidation = effectiveWindowDays === 1;
   const showNextDayActualColumns = isNextDayValidation;
 
@@ -360,21 +374,29 @@ const BacktestPage: React.FC = () => {
     setRunError(null);
     try {
       const code = normalizeBacktestCode(codeFilter);
-      const evalWindowDays = evalDays ? parseInt(evalDays, 10) : undefined;
+      const requestedEvalWindowDays = parseEvalWindowDays(evalDays);
       const dateFrom = analysisDateFrom || undefined;
       const dateTo = analysisDateTo || undefined;
       const response = await backtestApi.run({
         code,
         force: forceRerun || undefined,
         minAgeDays: forceRerun ? 0 : undefined,
-        evalWindowDays,
+        evalWindowDays: requestedEvalWindowDays,
         analysisDateFrom: dateFrom,
         analysisDateTo: dateTo,
       });
       setRunResult(response);
+      const effectiveEvalWindowDays =
+        response.appliedEvalWindowDays
+        ?? requestedEvalWindowDays
+        ?? parseEvalWindowDays(evalDays)
+        ?? overallPerf?.evalWindowDays;
+      if (effectiveEvalWindowDays != null) {
+        setEvalDays(String(effectiveEvalWindowDays));
+      }
       // Refresh data with same eval_window_days
-      fetchResults(1, code, evalWindowDays, dateFrom, dateTo, phaseFilter);
-      fetchPerformance(code, evalWindowDays, dateFrom, dateTo, phaseFilter);
+      fetchResults(1, code, effectiveEvalWindowDays, dateFrom, dateTo, phaseFilter);
+      fetchPerformance(code, effectiveEvalWindowDays, dateFrom, dateTo, phaseFilter);
     } catch (err) {
       setRunError(getParsedApiError(err));
     } finally {
@@ -385,7 +407,7 @@ const BacktestPage: React.FC = () => {
   // Filter by code
   const handleFilter = () => {
     const code = normalizeBacktestCode(codeFilter);
-    const windowDays = evalDays ? parseInt(evalDays, 10) : undefined;
+    const windowDays = parseEvalWindowDays(evalDays);
     setCurrentPage(1);
     fetchResults(1, code, windowDays, analysisDateFrom, analysisDateTo, phaseFilter);
     fetchPerformance(code, windowDays, analysisDateFrom, analysisDateTo, phaseFilter);
@@ -408,7 +430,7 @@ const BacktestPage: React.FC = () => {
   // Pagination
   const totalPages = Math.ceil(totalResults / pageSize);
   const handlePageChange = (page: number) => {
-    const windowDays = evalDays ? parseInt(evalDays, 10) : undefined;
+    const windowDays = parseEvalWindowDays(evalDays);
     fetchResults(page, normalizeBacktestCode(codeFilter), windowDays, analysisDateFrom, analysisDateTo, phaseFilter);
   };
 

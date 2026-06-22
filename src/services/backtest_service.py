@@ -281,6 +281,7 @@ class BacktestService:
             "completed": completed,
             "insufficient": insufficient,
             "errors": errors,
+            "applied_eval_window_days": int(eval_window_days),
             "message": diagnostics.get("message"),
             "diagnostics": diagnostics,
         }
