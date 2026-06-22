@@ -10,7 +10,7 @@ import type {
   ReportLanguage,
 } from '../../types/analysis';
 import { markdownToPlainText } from '../../utils/markdown';
-import { getReportText, normalizeReportLanguage } from '../../utils/reportLanguage';
+import { getReportText, normalizeReportLanguage, reportLanguageToUiLanguage } from '../../utils/reportLanguage';
 import { Card } from '../common';
 import { Tooltip } from '../common/Tooltip';
 import { ReportMarkdownBody } from './ReportMarkdownBody';
@@ -255,6 +255,25 @@ const MARKET_REVIEW_TEXT: Record<ReportLanguage, {
     change: 'Change',
     highLow: 'High/Low',
   },
+  ja: {
+    reviewSummary: 'リキャップ要約',
+    noReviewSummary: '要約はまだありません',
+    noSentimentScore: 'スコアはまだありません',
+    rotationAndFunds: 'ローテーションと資金',
+    noRotationView: 'ローテーションの見解はまだありません',
+    riskAndWatch: 'リスクと観察',
+    noRiskWatch: '注目ポイントはまだありません',
+    structuredMarketData: '構造化された市場データ',
+    noBreadthData: 'データなし',
+    advancers: '値上がり銘柄数',
+    decliners: '値下がり銘柄数',
+    limitUpDown: 'ストップ高/安',
+    turnover: '売買代金',
+    index: '指数',
+    last: '現在値',
+    change: '騰落率',
+    highLow: '高値/安値',
+  },
 };
 
 export const MarketReviewReportView: React.FC<MarketReviewReportViewProps> = ({
@@ -268,7 +287,7 @@ export const MarketReviewReportView: React.FC<MarketReviewReportViewProps> = ({
 }) => {
   const normalizedReportLanguage = normalizeReportLanguage(reportLanguage);
   const text = getReportText(normalizedReportLanguage);
-  const runFlowText = UI_TEXT[normalizedReportLanguage];
+  const runFlowText = UI_TEXT[reportLanguageToUiLanguage(reportLanguage)];
   const marketReviewText = MARKET_REVIEW_TEXT[normalizedReportLanguage];
   const [loadedMarkdown, setLoadedMarkdown] = useState<LoadedMarkdown | null>(null);
   const [loadError, setLoadError] = useState<LoadError | null>(null);

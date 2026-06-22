@@ -19,6 +19,12 @@ const REQUEST_PHASE_LABELS: Record<ReportLanguage, Record<AnalysisPhase, string>
     intraday: 'Intraday',
     postmarket: 'Post-market',
   },
+  ja: {
+    auto: '自動',
+    premarket: '寄り付き前',
+    intraday: 'ザラ場',
+    postmarket: '引け後',
+  },
 };
 
 const MARKET_PHASE_LABELS: Record<ReportLanguage, Record<MarketPhaseValue, string>> = {
@@ -40,6 +46,15 @@ const MARKET_PHASE_LABELS: Record<ReportLanguage, Record<MarketPhaseValue, strin
     non_trading: 'Non-trading',
     unknown: 'Unknown phase',
   },
+  ja: {
+    premarket: '寄り付き前',
+    intraday: 'ザラ場',
+    lunch_break: '昼休み',
+    closing_auction: '引け間際',
+    postmarket: '引け後',
+    non_trading: '非取引日',
+    unknown: '局面不明',
+  },
 };
 
 const TEXT = {
@@ -52,6 +67,11 @@ const TEXT = {
     requestPrefix: 'Requested phase',
     finalPrefix: 'Market phase',
     partialBar: 'Partial bar',
+  },
+  ja: {
+    requestPrefix: 'リクエスト局面',
+    finalPrefix: '市場局面',
+    partialBar: '日足未確定',
   },
 } as const;
 

@@ -275,7 +275,7 @@ const fieldDescriptionMap: Record<string, string> = {
   WEBHOOK_VERIFY_SSL: '发送 HTTPS Webhook 时是否校验证书，公网环境建议保持开启。',
   SINGLE_STOCK_NOTIFY: '启用后按个股分别推送通知；关闭则合并为单条消息。',
   REPORT_TYPE: '通知报告展示粒度（如 simple/full/brief）。',
-  REPORT_LANGUAGE: '通知报告语言（zh/en）。',
+  REPORT_LANGUAGE: '通知报告语言（zh/en/ja）。',
   REPORT_TEMPLATES_DIR: '自定义报告模板目录路径。',
   REPORT_INTEGRITY_ENABLED: '启用报告完整性检查，避免发送缺字段或异常内容。',
   REPORT_RENDERER_ENABLED: '启用报告渲染器，将结构化数据渲染为最终通知内容。',
@@ -309,7 +309,7 @@ const fieldDescriptionMap: Record<string, string> = {
   RUN_IMMEDIATELY: '程序启动后立即执行一次分析任务。',
   MARKET_REVIEW_ENABLED: '是否启用大盘复盘流程。',
   DAILY_MARKET_CONTEXT_ENABLED: '默认开启。开启后会把当日大盘摘要注入个股分析，并在高风险或退潮环境下软化激进买入建议；关闭后仍可运行大盘复盘。',
-  MARKET_REVIEW_REGION: '大盘复盘默认市场区域（如 cn/us/hk）。',
+  MARKET_REVIEW_REGION: '大盘复盘默认市场区域（如 cn/us/hk/jp）。',
   MARKET_REVIEW_COLOR_SCHEME: '控制大盘复盘指数涨跌幅图标颜色：green_up 为绿涨红跌，red_up 为红涨绿跌。',
   ANALYSIS_DELAY: '启动任务前的延迟秒数，可用于等待依赖服务就绪。',
   SAVE_CONTEXT_SNAPSHOT: '控制是否持久化整份分析历史 context_snapshot；关闭后不会保存低敏输入概览、市场阶段摘要和增强上下文，但不影响当次分析的 pack 构建或 Prompt 摘要。',
@@ -364,8 +364,10 @@ const fieldOptionLabelMap: Record<string, Record<string, string>> = {
   REPORT_LANGUAGE: {
     zh: '中文',
     en: '英文',
+    ja: '日文',
     chinese: '中文',
     english: '英文',
+    japanese: '日文',
   },
   NOTIFICATION_MIN_SEVERITY: {
     '': '未设置',
@@ -392,6 +394,7 @@ const fieldOptionLabelMap: Record<string, Record<string, string>> = {
     cn: 'A 股',
     hk: '港股',
     us: '美股',
+    jp: '日股',
     both: '全部市场',
   },
   AGENT_ARCH: {
@@ -429,8 +432,10 @@ const fieldOptionLabelMapEn: Record<string, Record<string, string>> = {
   REPORT_LANGUAGE: {
     zh: 'Chinese',
     en: 'English',
+    ja: 'Japanese',
     chinese: 'Chinese',
     english: 'English',
+    japanese: 'Japanese',
   },
   NOTIFICATION_MIN_SEVERITY: {
     '': 'Not set',
@@ -457,6 +462,7 @@ const fieldOptionLabelMapEn: Record<string, Record<string, string>> = {
     cn: 'A-shares',
     hk: 'Hong Kong',
     us: 'US',
+    jp: 'Japan',
     both: 'All markets',
   },
   AGENT_ARCH: {

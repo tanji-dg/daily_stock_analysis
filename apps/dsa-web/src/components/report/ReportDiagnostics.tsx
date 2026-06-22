@@ -10,7 +10,7 @@ import type {
   RunDiagnosticStatus,
   RunDiagnosticSummary,
 } from '../../types/analysis';
-import { normalizeReportLanguage } from '../../utils/reportLanguage';
+import { normalizeReportLanguage, reportLanguageToUiLanguage } from '../../utils/reportLanguage';
 import { Badge, Button, Card, StatusDot } from '../common';
 
 interface ReportDiagnosticsProps {
@@ -93,6 +93,36 @@ const TEXT = {
       skipped: 'Skipped',
     },
   },
+  ja: {
+    eyebrow: '実行診断',
+    title: '実行ステータス',
+    loading: '診断を読み込み中...',
+    unavailable: '実行診断は利用できません',
+    noComponents: 'コンポーネント診断はありません',
+    components: '主要経路',
+    advanced: '詳細フィールド',
+    copy: 'トラブル情報をコピー',
+    copied: 'コピーしました',
+    scope: '取得 / LLM / 保存 / 通知の経路',
+    trace: 'Trace',
+    task: 'Task',
+    query: 'Query',
+    trigger: 'トリガー',
+    overall: {
+      normal: '正常',
+      degraded: '一部低下',
+      failed: '失敗',
+      unknown: '不明',
+    },
+    component: {
+      ok: '正常',
+      degraded: '直近の失敗で低下',
+      failed: '失敗',
+      unknown: '不明',
+      not_configured: '未設定',
+      skipped: 'スキップ',
+    },
+  },
 } as const;
 
 const OVERALL_STATUS_STYLE: Record<RunDiagnosticStatus, { variant: BadgeVariant; tone: StatusTone }> = {
@@ -140,7 +170,7 @@ export const ReportDiagnostics: React.FC<ReportDiagnosticsProps> = ({
 }) => {
   const reportLanguage = normalizeReportLanguage(language);
   const text = TEXT[reportLanguage];
-  const runFlowText = UI_TEXT[reportLanguage];
+  const runFlowText = UI_TEXT[reportLanguageToUiLanguage(language)];
   const [fetchState, setFetchState] = useState<{
     recordId?: number;
     summary: RunDiagnosticSummary | null;

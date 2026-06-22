@@ -1,7 +1,16 @@
 import type { ReportLanguage } from '../types/analysis';
 
 export const normalizeReportLanguage = (value?: string | null): ReportLanguage =>
-  value === 'en' ? 'en' : 'zh';
+  value === 'en' ? 'en' : value === 'ja' || value === 'jp' ? 'ja' : 'zh';
+
+/**
+ * Map a report language to a UI-chrome language. The Web UI shell only ships
+ * zh/en strings, so Japanese reports fall back to the English UI chrome.
+ */
+export const reportLanguageToUiLanguage = (value?: string | null): 'zh' | 'en' => {
+  const normalized = normalizeReportLanguage(value);
+  return normalized === 'zh' ? 'zh' : 'en';
+};
 
 const REPORT_TEXT = {
   zh: {
@@ -95,6 +104,52 @@ const REPORT_TEXT = {
     laggingBoard: 'Lagging',
     neutralBoard: 'Neutral',
     reanalyze: 'Reanalyze',
+  },
+  ja: {
+    keyInsights: '主要なインサイト',
+    noAnalysisSummary: '分析結論はまだありません',
+    actionAdvice: 'アクション提案',
+    noAdvice: '提案はまだありません',
+    trendPrediction: 'トレンド予測',
+    noPrediction: '予測はまだありません',
+    marketSentiment: '市場心理',
+    strategyPoints: '戦略ポイント',
+    sniperLevels: '売買ポイント',
+    idealBuy: '理想的な買い場',
+    secondaryBuy: '次善の買い場',
+    stopLoss: '損切り価格',
+    takeProfit: '利確目標',
+    noValue: '—',
+    newsFeed: 'ニュースフィード',
+    relatedNews: '関連ニュース',
+    refresh: '更新',
+    retry: '再試行',
+    dismiss: '閉じる',
+    details: '詳細を見る',
+    loadingNews: 'ニュースを読み込み中...',
+    noNews: '関連ニュースはありません',
+    noNewsDescription: '後ほど更新して最新ニュースを確認してください。',
+    openLink: '開く',
+    transparency: '透明性',
+    traceability: 'データ追跡',
+    rawResult: '元の分析結果',
+    analysisSnapshot: '分析スナップショット',
+    copy: 'コピー',
+    copied: 'コピーしました',
+    recordId: 'レコード ID',
+    fullReport: '完全な分析レポート',
+    loadingReport: 'レポートを読み込み中...',
+    loadReportFailed: 'レポートの読み込みに失敗しました',
+    copyMarkdownSource: 'Markdown ソースをコピー',
+    copyPlainText: 'プレーンテキストをコピー',
+    analysisModel: '分析モデル',
+    fearGreedIndex: '恐怖・強欲指数',
+    boardLinkage: 'セクター連動',
+    relatedBoards: '関連セクター',
+    leadingBoard: '上昇主導',
+    laggingBoard: '下落主導',
+    neutralBoard: '中立',
+    reanalyze: '再分析',
   },
 } as const;
 

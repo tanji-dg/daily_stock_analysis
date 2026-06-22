@@ -23,6 +23,10 @@ const NEWS_SOURCE_TEXT = {
     sourceLabel: 'Related news / follow-up retrieval',
     sourceHint: 'Source: supplemental report-page news; analysis input is shown in Input Blocks.',
   },
+  ja: {
+    sourceLabel: '関連ニュース／追加検索',
+    sourceHint: '出典：レポートページの補足ニュース。分析に使用したかは入力データブロックを参照。',
+  },
 } as const;
 
 /**
