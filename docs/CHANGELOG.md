@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 <!-- 新条目格式：- [类型] 描述（类型取值：新功能/改进/修复/文档/测试/chore）-->
 <!-- 每条独立一行追加到本段末尾，无需分类标题，合并时冲突最小 -->
 
+- [新功能] 大盘复盘支持日本市场（MARKET_REVIEW_REGION=jp），覆盖日经225/TOPIX 并新增日股策略蓝图与市场画像。
+- [新功能] 报告语言新增日语（REPORT_LANGUAGE=ja），LLM 分析正文、报告标签与大盘复盘均可用日语输出。
+- [改进] 个股分析放开日股市场门禁（告警 worker、组合风险、AI 市场工具等不再将日股判为 unknown）。
 - [修复] 修复日股/韩股历史列表重建市场阶段摘要时将 non_trading 等结果阶段误传为 analysis_phase 导致列表查询失败的问题。
 - [新功能] 支持 SCHEDULE_TIMES 多时间定时推送，并让 Web/API/Desktop 长运行进程保存调度配置后热启停或重建 runtime scheduler。
 - [改进] Web 设置页以“定时任务”面板维护多时间定时推送、状态刷新和立即执行一次，不再向用户直接暴露 SCHEDULE_TIMES 等内部配置键。
