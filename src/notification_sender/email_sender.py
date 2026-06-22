@@ -60,8 +60,11 @@ class EmailSender:
         self._email_config = {
             'sender': config.email_sender,
             'sender_name': getattr(config, 'email_sender_name', 'daily_stock_analysis股票分析助手'),
+            # SMTP login username; defaults to the From address when not set.
+            'login': getattr(config, 'email_smtp_user', None) or config.email_sender,
             'password': config.email_password,
             'receivers': config.email_receivers or ([config.email_sender] if config.email_sender else []),
+            'report_language': getattr(config, 'report_language', 'zh'),
         }
         self._stock_email_groups = getattr(config, 'stock_email_groups', None) or []
         
@@ -109,6 +112,16 @@ class EmailSender:
                 result.append(e)
         return result
 
+    def _default_subject(self) -> str:
+        """Build the default email subject in the configured report language."""
+        date_str = datetime.now().strftime('%Y-%m-%d')
+        lang = str(self._email_config.get('report_language') or 'zh').strip().lower()
+        if lang.startswith('en'):
+            return f"📈 Stock Analysis Report - {date_str}"
+        if lang.startswith('ja') or lang.startswith('jp'):
+            return f"📈 株式分析レポート - {date_str}"
+        return f"📈 股票智能分析报告 - {date_str}"
+
     def _format_sender_address(self, sender: str) -> str:
         """Encode display name safely so non-ASCII sender names work across SMTP providers."""
         sender_name = self._email_config.get('sender_name') or '股票分析助手'
@@ -155,15 +168,15 @@ class EmailSender:
             return False
         
         sender = self._email_config['sender']
+        login_user = self._email_config.get('login') or sender
         password = self._email_config['password']
         receivers = receivers or self._email_config['receivers']
         server: Optional[smtplib.SMTP] = None
-        
+
         try:
             # 生成主题
             if subject is None:
-                date_str = datetime.now().strftime('%Y-%m-%d')
-                subject = f"📈 股票智能分析报告 - {date_str}"
+                subject = self._default_subject()
             
             # 将 Markdown 转换为简单 HTML
             html_content = markdown_to_html_document(content)
@@ -180,10 +193,11 @@ class EmailSender:
             msg.attach(text_part)
             msg.attach(html_part)
             
-            # 自动识别 SMTP 配置
-            domain = sender.split('@')[-1].lower()
+            # Detect SMTP server from the login account's domain (the account that
+            # authenticates), which may differ from the From address.
+            domain = login_user.split('@')[-1].lower()
             smtp_config = SMTP_CONFIGS.get(domain)
-            
+
             if smtp_config:
                 smtp_server = smtp_config['server']
                 smtp_port = smtp_config['port']
@@ -205,9 +219,9 @@ class EmailSender:
                 server = smtplib.SMTP(smtp_server, smtp_port, timeout=timeout_seconds or 30)
                 server.starttls()
             
-            server.login(sender, password)
+            server.login(login_user, password)
             server.send_message(msg)
-            
+
             logger.info(f"邮件发送成功，收件人: {receivers}")
             return True
             
@@ -230,12 +244,12 @@ class EmailSender:
         if not self._is_email_configured():
             return False
         sender = self._email_config['sender']
+        login_user = self._email_config.get('login') or sender
         password = self._email_config['password']
         receivers = receivers or self._email_config['receivers']
         server: Optional[smtplib.SMTP] = None
         try:
-            date_str = datetime.now().strftime('%Y-%m-%d')
-            subject = f"📈 股票智能分析报告 - {date_str}"
+            subject = self._default_subject()
             msg = MIMEMultipart('related')
             msg['Subject'] = Header(subject, 'utf-8')
             msg['From'] = self._format_sender_address(sender)
@@ -255,7 +269,7 @@ class EmailSender:
             img_part.add_header('Content-ID', '<report-image>')
             msg.attach(img_part)
 
-            domain = sender.split('@')[-1].lower()
+            domain = login_user.split('@')[-1].lower()
             smtp_config = SMTP_CONFIGS.get(domain)
             if smtp_config:
                 smtp_server, smtp_port = smtp_config['server'], smtp_config['port']
@@ -269,7 +283,7 @@ class EmailSender:
             else:
                 server = smtplib.SMTP(smtp_server, smtp_port, timeout=30)
                 server.starttls()
-            server.login(sender, password)
+            server.login(login_user, password)
             server.send_message(msg)
             logger.info("邮件（内联图片）发送成功，收件人: %s", receivers)
             return True
